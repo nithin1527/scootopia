@@ -575,6 +575,10 @@ video {
   visibility: collapse;
 }
 
+.static {
+  position: static;
+}
+
 .fixed {
   position: fixed;
 }
@@ -1833,6 +1837,10 @@ video {
 }
 
 /* basic button styles <-- this is also canvas button */
+
+/* static: styles that remain the same */
+
+/* static: styles that you can modify for a unique element */
 
 .basic-btn-animate {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));

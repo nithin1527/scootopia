@@ -14,34 +14,41 @@ function initLayoutIconBtns() {
     const layoutIcons = document.querySelectorAll('.layout-icon');
     const mapStatus = document.getElementById('map-status');
 
-
     const layoutABtn = document.getElementById('layout-a');
     const layoutBtn = document.getElementById('layout-b');
     const layoutCBtn = document.getElementById('layout-c');
     const customLayoutButton = document.getElementById('custom-layout');
+    const largeGridRes = document.getElementById('grid-64-btn');
 
-    layoutABtn.addEventListener('click', function() {
+    layoutABtn.addEventListener('click', async function() {
         layoutIcons.forEach(icon => deactivate(icon));
         activate(layoutABtn);
-        loadGrid('../assets/layouts/layout-A.json');
+        largeGridRes.click();
+        await loadGrid('../assets/layouts/layout-A.json');
+        updateMapStatus();
     });
 
-    layoutBtn.addEventListener('click', function() {
+    layoutBtn.addEventListener('click', async function() {
         layoutIcons.forEach(icon => deactivate(icon));
         activate(layoutBtn);
-        loadGrid('../assets/layouts/layout-B.json');
+        largeGridRes.click();
+        await loadGrid('../assets/layouts/layout-B.json');
+        updateMapStatus();
     });
 
-    layoutCBtn.addEventListener('click', function() {
+    layoutCBtn.addEventListener('click', async function() {
         layoutIcons.forEach(icon => deactivate(icon));
         activate(layoutCBtn);
-        loadGrid('../assets/layouts/layout-C.json');
+        largeGridRes.click();
+        await loadGrid('../assets/layouts/layout-C.json');
+        updateMapStatus();
     });
 
-    customLayoutButton.addEventListener('click', function() {
+    customLayoutButton.addEventListener('click', async function() {
         layoutIcons.forEach(icon => deactivate(icon));
         activate(customLayoutButton);
-        show(mapStatus);
+        largeGridRes.click();
+        updateMapStatus();
         document.getElementById('grid-clear-btn').click();
     });
 }
@@ -134,9 +141,11 @@ function initGridResBtns() {
     const gridBtns = document.querySelectorAll('.grid-btn');
     gridBtns.forEach(btn => btn.addEventListener('click', 
         function() {
+            if (btn.classList.contains('active')) return;
             gridBtns.forEach(btn => deactivate(btn));
             activate(btn);
             document.getElementById('grid-clear-btn').click();
+            updateMapStatus();
         }
     ));
 }
@@ -177,12 +186,13 @@ function isGridValid() {
     const placedTiles = Array.from(grid.querySelectorAll('.placed-tile'));
     const tileSizeState = document.querySelector('.grid-btn.active');
     const tileSize = parseInt(tileSizeState.getAttribute('data-tile-size'), 10);
-    let result = true;
+    let result = false;
     
-    if (tileSize === 64) 
-        if (placedTiles.length !== GRID_SIZE_64PX * GRID_SIZE_64PX) result = false;
-    else if (tileSize === 32)
-        if (placedTiles.length!== GRID_SIZE_32PX * GRID_SIZE_32PX) result = false;
+    if (tileSize === 64) {
+        if (placedTiles.length === GRID_SIZE_64PX * GRID_SIZE_64PX) result = true;
+    } else if (tileSize === 32) {
+        if (placedTiles.length === GRID_SIZE_32PX * GRID_SIZE_32PX) result = true;
+    }
 
     return result
 }
