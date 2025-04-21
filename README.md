@@ -1,3 +1,3 @@
 # Scootopia
-Scootopia is a **_S_**imulation framework for modeling _**C**_ampus environments with **O**bservation-based RL for the purposes of examining **_O_**n campus, risky **_T_**raffic behaviors involving 
-**_O_**verlapping interactions between **_P_**edestrians, MMVs, and vehicles to **_I_**nform real-world safety **_A_**pplications.
+Scootopia is a **S**imulation framework for modeling **C**ampus environments with **O**bservation-based RL for the purposes of examining **O**n campus, risky **T**raffic behaviors involving 
+**O**verlapping interactions between **P**edestrians, MMVs, and vehicles to **I**nform real-world safety **A**pplications.
