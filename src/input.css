@@ -1,0 +1,100 @@
+/* 
+    - this is our custom tailwind styles
+    - after running the build process specified by the tailwind docs, styles.css is produced     
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* glassmorphism */
+.glass {@apply bg-gray-100 backdrop-blur-3xl bg-opacity-50 backdrop-saturate-200 backdrop-contrast-100};
+
+/* settings bar */
+.bar {@apply fixed bottom-10 left-1/2 -translate-x-1/2 px-4 max-w-5xl w-full py-4 rounded-xl text-left};
+.settings-bar {@apply bar ring-1 ring-gray-200/50 flex flex-row items-center justify-center w-full bg-stone-50}; 
+
+/* parameter boxes */
+.param-container {@apply w-1/2 relative rounded-lg p-4 bg-white self-stretch items-center};
+.param {@apply inline-block text-sm text-black font-light rounded-full px-4 py-2 bg-gray-100};
+
+/* info icon + tooltip box */
+.info-icon {@apply absolute top-2 right-2 text-gray-500 flex items-center justify-center};
+.info-transitions {@apply transition-all duration-100 ease-out ease-in};
+.info-group {@apply scale-95 invisible group-hover:visible group-hover:scale-100};
+.info-tooltip-dialog {@apply absolute bottom-7 -translate-x-1/2 left-2 w-64 bg-white p-4 rounded-lg shadow-sm ring-1 ring-gray-200/50 font-light};
+.info-tooltip {@apply info-tooltip-dialog info-group info-transitions cursor-pointer z-10;};
+
+/* layout icon */
+.layout-icon {@apply p-1 w-8 h-8 flex items-center justify-center};
+    #layout-d { @apply p-2;}
+.layout-icon:hover {@apply bg-gray-50 rounded-lg};
+.layout-icon svg, .layout-icon img {@apply w-8 h-8 object-contain};
+.animate-slide-in {@apply transition-transform duration-200 ease-out; transform:scale(1.05) };
+.layout-icon.active {@apply bg-gray-100 rounded-lg animate-slide-in};
+.layout-icon.layout-d.active {@apply bg-cyan-50 rounded-lg animate-slide-in};
+
+.not-loaded-dot {@apply bg-red-500};
+.loaded-dot {@apply bg-green-500};
+.not-loaded {@apply text-red-500 };
+.loaded {@apply text-green-500 };
+
+/* basic button styles <-- this is also canvas button */
+.basic-btn-animate {@apply transition-all duration-200 ease-in-out transform active:scale-95};
+.basic-btn-editable {@apply m-2 text-xs px-3 py-2};
+.basic-btn-static {@apply ring-1 ring-gray-200 rounded-full inline-block flex flex-row items-center justify-center gap-1 basic-btn-animate};
+.basic-btn {@apply basic-btn-editable basic-btn-static};
+.basic-btn:hover {@apply bg-gray-50};
+.basic-btn.active {@apply text-cyan-500 ring-1 ring-cyan-100 bg-cyan-50};
+
+/* canvas */
+.canvas-container {@apply fixed bottom-64 left-1/2 -translate-x-1/2 flex gap-0 w-full max-w-5xl h-2/3};
+.canvas-main {@apply w-2/3 bg-white ring-1 ring-gray-300 rounded-tl-lg rounded-bl-lg};
+.canvas-settings-container {@apply w-1/3 bg-white ring-1 ring-gray-300 rounded-tr-lg rounded-br-lg};
+
+.canvas-container-main {@apply opacity-0 scale-95 transform transition-all duration-200 ease-in-out};
+.canvas-container-main.show {@apply opacity-100 scale-100};
+
+/* save and upload map btn */
+.su-btn-editable {@apply m-1 text-sm px-4 py-2};
+.su-btn {@apply basic-btn-static su-btn-editable};
+.su-btn:hover {@apply bg-gray-50};
+
+/* tile */
+.tile {@apply w-12 h-12 flex items-center justify-center rounded-sm basic-btn-animate};
+.tile.active {@apply ring-2 ring-cyan-200};
+
+/* crosswalk btn */
+.crosswalk-btn { @apply basic-btn-editable basic-btn-static; }
+.crosswalk-btn.active {
+  @apply text-green-700 ring-1 ring-green-300 bg-green-50;
+}
+
+/* grid resolution buttons */
+.grid-btn-animate {@apply basic-btn-animate};
+.grid-btn-static {@apply w-20 h-20 rounded-lg flex flex-row justify-center items-end p-2 gap-1};
+.grid-btn-editable {@apply ring-2 ring-gray-200 };
+.grid-btn {@apply grid-btn-editable grid-btn-static grid-btn-animate};
+.grid-btn.active {@apply grid-btn-static ring-0 text-white bg-stone-900};
+
+/* grid clear & delete button */
+.grid-edit-btn-animate {@apply basic-btn-animate};
+.grid-edit-btn-static {@apply basic-btn-static};
+.grid-edit-btn-editable {@apply ring-1 ring-gray-200 text-sm px-4 py-2};
+.grid-edit-btn {@apply grid-edit-btn-editable grid-edit-btn-static grid-edit-btn-animate};
+.grid-edit-btn:hover {@apply bg-gray-50};
+
+.grid-clear-btn {@apply grid-edit-btn};
+.grid-delete-btn {@apply grid-edit-btn};
+.grid-delete-btn.active {@apply text-red-500 ring-1 ring-red-300 bg-red-50};
+
+/* green ghost tile */
+.ghost-tile {@apply absolute bg-green-500 bg-opacity-50 cursor-crosshair};
+
+/* 2d placed tile */
+.placed-tile {@apply absolute z-10 ring-[0.1px] ring-gray-200 w-12 h-12 flex items-center justify-center rounded-sm};
+
+/* IMPORTANT -> enure grid is a square, 8 blocks, 64px wide each */
+.grid {@apply w-[512px] aspect-square bg-gray-100 relative };
+
+/* for 32px grid res shrink icon size for all tiles */
+.small.small-icons {@apply w-4 h-4;}
