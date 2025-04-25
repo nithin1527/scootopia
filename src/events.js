@@ -8,40 +8,26 @@ import {
     toggleActiveState,
     deactivate,
     activate,
-} from './utils.js';
+} from './event-utils.js';
+
+import { Grid } from './classes/grid-classes.js';
 
 function initLayoutIconBtns() {
     const layoutIcons = document.querySelectorAll('.layout-icon');
-    const mapStatus = document.getElementById('map-status');
-
-    const layoutABtn = document.getElementById('layout-a');
-    const layoutBtn = document.getElementById('layout-b');
-    const layoutCBtn = document.getElementById('layout-c');
     const customLayoutButton = document.getElementById('custom-layout');
     const largeGridRes = document.getElementById('grid-64-btn');
 
-    layoutABtn.addEventListener('click', async function() {
-        layoutIcons.forEach(icon => deactivate(icon));
-        activate(layoutABtn);
-        largeGridRes.click();
-        await loadGrid('../assets/layouts/layout-A.json');
-        updateMapStatus();
-    });
-
-    layoutBtn.addEventListener('click', async function() {
-        layoutIcons.forEach(icon => deactivate(icon));
-        activate(layoutBtn);
-        largeGridRes.click();
-        await loadGrid('../assets/layouts/layout-B.json');
-        updateMapStatus();
-    });
-
-    layoutCBtn.addEventListener('click', async function() {
-        layoutIcons.forEach(icon => deactivate(icon));
-        activate(layoutCBtn);
-        largeGridRes.click();
-        await loadGrid('../assets/layouts/layout-C.json');
-        updateMapStatus();
+    let btnIds = ['layout-a', 'layout-b', 'layout-c'];
+    btnIds.forEach(id => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('click', async function() {
+            layoutIcons.forEach(icon => deactivate(icon));
+            activate(btn);
+            largeGridRes.click();
+            const layoutFileName = id.toLowerCase();
+            await loadGrid(`../assets/layouts/${layoutFileName}.json`);
+            updateMapStatus();
+        });
     });
 
     customLayoutButton.addEventListener('click', async function() {
@@ -53,17 +39,29 @@ function initLayoutIconBtns() {
     });
 }
 
+let initEventsPromiseResolve;
+const initEventsPromise = new Promise(
+    (resolve) => {initEventsPromiseResolve = resolve;}
+); 
+
+let firstLoad = true;
 async function loadGrid(path) {
     const r = await fetch(path);
     if (!r.ok) throw new Error(`Failed to load ${path}`);
     processGridObj(await r.json());
+    if (firstLoad) {
+        initEventsPromiseResolve();
+        firstLoad = false;
+    }
 }
 
 function initCanvasBtn() {
     const canvasBtn = document.getElementById('open-canvas-btn');
+    const canvasContainer = document.getElementById('canvas-container');
     canvasBtn.addEventListener('click', function() { 
-        toggleActive(this); 
+        toggleActive(this);
         document.getElementById('canvas-container').classList.toggle('show');
+        canvasContainer.classList.toggle('pointer-events-none');
     });
 }
 
@@ -92,7 +90,7 @@ function initDeleteTileBtn() {
 
 function initDeleteMouseover() {
     // for UX so user knows they well delete when click
-    const trashIcon = "url('data:image/svg+xml;utf8,<svg width=\"24\" height=\"24\" viewBox=\"0 0 512 512\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"gray\" d=\"M296 64h-80a7.91 7.91 0 0 0-8 8v24h96V72a7.91 7.91 0 0 0-8-8\"/><path fill=\"gray\" d=\"M432 96h-96V72a40 40 0 0 0-40-40h-80a40 40 0 0 0-40 40v24H80a16 16 0 0 0 0 32h17l19 304.92c1.42 26.85 22 47.08 48 47.08h184c26.13 0 46.3-19.78 48-47l19-305h17a16 16 0 0 0 0-32M192.57 416H192a16 16 0 0 1-16-15.43l-8-224a16 16 0 1 1 32-1.14l8 224A16 16 0 0 1 192.57 416M272 400a16 16 0 0 1-32 0V176a16 16 0 0 1 32 0Zm32-304h-96V72a7.91 7.91 0 0 1 8-8h80a7.91 7.91 0 0 1 8 8Zm32 304.57A16 16 0 0 1 320 416h-.58A16 16 0 0 1 304 399.43l8-224a16 16 0 1 1 32 1.14Z\"/></svg>') 12 12, pointer";
+    const trashIcon = "url('data:image/svg+xml;utf8,<svg width=\"24\" height=\"24\" viewBox=\"0 0 512 512\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"gray\" d=\"M296 64h-80a7.91 7.91 0 0 0-8 8v24h96V72a7.91 7.91 0 0 0-8-8\"/><path fill=\"white\" d=\"M432 96h-96V72a40 40 0 0 0-40-40h-80a40 40 0 0 0-40 40v24H80a16 16 0 0 0 0 32h17l19 304.92c1.42 26.85 22 47.08 48 47.08h184c26.13 0 46.3-19.78 48-47l19-305h17a16 16 0 0 0 0-32M192.57 416H192a16 16 0 0 1-16-15.43l-8-224a16 16 0 1 1 32-1.14l8 224A16 16 0 0 1 192.57 416M272 400a16 16 0 0 1-32 0V176a16 16 0 0 1 32 0Zm32-304h-96V72a7.91 7.91 0 0 1 8-8h80a7.91 7.91 0 0 1 8 8Zm32 304.57A16 16 0 0 1 320 416h-.58A16 16 0 0 1 304 399.43l8-224a16 16 0 1 1 32 1.14Z\"/></svg>') 12 12, pointer";
     document.getElementById('grid').addEventListener('mouseover', function(e) {
         const cursorContainsPlacedTile = e.target.closest('.placed-tile');
         const deleteModeActive = deleteTileBtn.classList.contains('active');
@@ -150,6 +148,13 @@ function initGridResBtns() {
     ));
 }
 
+function getTileSize() {
+    const activeTileSizeState = document.querySelector('.grid-btn.active');
+    const activeTileSize = activeTileSizeState.getAttribute('data-tile-size');
+    const tileSize = parseInt(activeTileSize, 10);
+    return tileSize;
+}
+
 const grid = document.getElementById('grid');
 const ghostTile = document.getElementById('ghost-tile');
 function initGhostTile() {
@@ -159,9 +164,7 @@ function initGhostTile() {
             hide(ghostTile);
             return;
         }
-        const activeTileSizeState = document.querySelector('.grid-btn.active');
-        const activeTileSize = activeTileSizeState.getAttribute('data-tile-size');
-        const tileSize = parseInt(activeTileSize, 10);
+        const tileSize = getTileSize();
 
         const bbox = grid.getBoundingClientRect();
         const mousePos = { x:e.clientX, y:e.clientY };
@@ -215,9 +218,7 @@ function updateMapStatus() {
 
 function placeTile(e) {
     hide(ghostTile);
-    const activeTileSizeState = document.querySelector('.grid-btn.active');
-    const activeTileSize = activeTileSizeState.getAttribute('data-tile-size');
-    const tileSize = parseInt(activeTileSize, 10);
+    const tileSize = getTileSize();
 
     // get bbox of the grid 
     const bbox = grid.getBoundingClientRect();
@@ -358,11 +359,10 @@ function getGrid(tileSize) {
 
     return canvasGrid;
 }
+
 function initSaveBtn() {
     document.getElementById('save-btn').addEventListener('click', function() {
-        const activeTileSizeState = document.querySelector('.grid-btn.active');
-        const activeTileSize = activeTileSizeState.getAttribute('data-tile-size');
-        const tileSize = parseInt(activeTileSize, 10);
+        const tileSize = getTileSize();
         handleJsonDownload(getGrid(tileSize), tileSize);
     });
 }
@@ -371,12 +371,10 @@ function initSaveBtn() {
 // - https://www.geeksforgeeks.org/how-to-convert-json-to-blob-in-javascript/
 // - https://dnmtechs.com/simple-steps-to-download-json-object-as-a-file-from-your-browser/
 function handleJsonDownload(grid, gridRes = 64) {
-    let jsonFileName = prompt("Enter a name for your grid:"); // basic but eh :|
+    if (!grid) return;
+
+    let jsonFileName = prompt("Enter a name for your grid:");
     if (!jsonFileName || jsonFileName === "") jsonFileName = "grid";
-    if (jsonFileName === "layout-A" || jsonFileName === "layout-B" || jsonFileName === "layout-C") {
-        alert('Pick a different name that is not (layout-A, layout-B, layout-C)');
-        return;
-    }
     jsonFileName = jsonFileName + ".json";
 
     const gridObj = {grid:grid, gridRes:gridRes};
@@ -480,5 +478,17 @@ export function initEvents() {
 
     // non button stuff
     initGridEvents();
+
+    // load the first json grid
+    document.getElementById('layout-a').click();
     
 }
+
+export async function readGridState() {
+    await initEventsPromise;
+    const tileSize = getTileSize();
+    const grid = getGrid(tileSize);
+    return new Grid(grid, tileSize);
+}
+
+export { initEventsPromise };

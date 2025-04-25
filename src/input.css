@@ -40,7 +40,7 @@
 
 /* basic button styles <-- this is also canvas button */
 /* static: styles that remain the same */
-/* static: styles that you can modify for a unique element */
+/* editable: styles that you can modify for a unique element */
 .basic-btn-animate {@apply transition-all duration-200 ease-in-out transform active:scale-95};
 .basic-btn-editable {@apply m-2 text-xs px-3 py-2};
 .basic-btn-static {@apply ring-1 ring-gray-200 rounded-full inline-block flex flex-row items-center justify-center gap-1 basic-btn-animate};
