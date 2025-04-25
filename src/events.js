@@ -10,12 +10,15 @@ import {
     activate,
 } from './event-utils.js';
 
+import {init3DEnvironment} from './simulation.js';
+
 import { Grid } from './classes/grid-classes.js';
 
 function initLayoutIconBtns() {
     const layoutIcons = document.querySelectorAll('.layout-icon');
     const customLayoutButton = document.getElementById('custom-layout');
-    const largeGridRes = document.getElementById('grid-64-btn');
+    const largeGridRes = document.querySelector('.grid-btn[data-tile-size="64"]');
+    const smallGridRes = document.querySelector('.grid-btn[data-tile-size="32"]');
 
     let btnIds = ['layout-a', 'layout-b', 'layout-c'];
     btnIds.forEach(id => {
@@ -23,19 +26,19 @@ function initLayoutIconBtns() {
         btn.addEventListener('click', async function() {
             layoutIcons.forEach(icon => deactivate(icon));
             activate(btn);
-            largeGridRes.click();
             const layoutFileName = id.toLowerCase();
+            largeGridRes.click();
             await loadGrid(`../assets/layouts/${layoutFileName}.json`);
             updateMapStatus();
+            init3DEnvironment();
         });
     });
 
     customLayoutButton.addEventListener('click', async function() {
         layoutIcons.forEach(icon => deactivate(icon));
         activate(customLayoutButton);
-        largeGridRes.click();
         updateMapStatus();
-        document.getElementById('grid-clear-btn').click();
+        removePlacedTiles();
     });
 }
 
@@ -62,6 +65,12 @@ function initCanvasBtn() {
         toggleActive(this);
         document.getElementById('canvas-container').classList.toggle('show');
         canvasContainer.classList.toggle('pointer-events-none');
+        try {
+            init3DEnvironment();
+        } catch(e) {
+            document.getElementById('layout-a').click();
+        }
+        updateMapStatus();
     });
 }
 
@@ -76,9 +85,11 @@ function initCrosswalkBtn() {
 
 function initClearGridBtn() {
     const clearGridBtn = document.getElementById('grid-clear-btn');
-    clearGridBtn.addEventListener('click', function() {
+    clearGridBtn.addEventListener('click', function(e) {
+        if (!e.isTrusted) return;
         const placedTiles = grid.querySelectorAll('.placed-tile');
         placedTiles.forEach(tile => tile.remove());
+        document.getElementById('custom-layout').click();
         updateMapStatus();
     });
 }
@@ -142,7 +153,7 @@ function initGridResBtns() {
             if (btn.classList.contains('active')) return;
             gridBtns.forEach(btn => deactivate(btn));
             activate(btn);
-            document.getElementById('grid-clear-btn').click();
+            removePlacedTiles();
             updateMapStatus();
         }
     ));
@@ -330,7 +341,8 @@ function getGrid(tileSize) {
             return;
         }
     } else if (tileSize === 32) {
-        if (placedTiles.length!== GRID_SIZE_32PX * GRID_SIZE_32PX) {
+        if (placedTiles.length !== GRID_SIZE_32PX * GRID_SIZE_32PX) {
+            console.log(placedTiles.length);
             alert('Each grid cell must be occupied by a tile!');
             return;
         }
@@ -385,7 +397,7 @@ function handleJsonDownload(grid, gridRes = 64) {
     l.href = url;
     l.download = jsonFileName;
     l.click();
-    l.revokeObjectURL(l.href);
+    URL.revokeObjectURL(l.href);
 }
 
 function placeTileType(type, tileSize, i, j) {
@@ -432,9 +444,22 @@ function parseJson(callback) {
     }
 }
 
+function removePlacedTiles() {
+    const placedTiles = grid.querySelectorAll('.placed-tile');
+    placedTiles.forEach(tile => tile.remove());
+}
+
 // take the loaded gridObj and map tiles back to canvas grid
 function processGridObj(gridObj) {
-    document.getElementById('grid-clear-btn').click();
+    
+    // set grid res when processing
+    const gridBtns = document.querySelectorAll('.grid-btn');
+    gridBtns.forEach(btn => deactivate(btn));
+    const gridBtn = document.querySelector(`.grid-btn[data-tile-size="${gridObj.gridRes}"]`);
+    activate(gridBtn);
+
+    removePlacedTiles();
+    updateMapStatus();
     const map = Array.from(gridObj.grid);
     const tileSize = gridObj.gridRes;
     const dim = tileSize === 64 ? GRID_SIZE_64PX : GRID_SIZE_32PX;
@@ -454,12 +479,26 @@ function handleJsonUpload() {
 function initUploadBtn() {
     const uploadBtn = document.getElementById('upload-btn');
     const input = document.getElementById('gridUpload');
-    input.addEventListener('change', function(e) {
+    input.addEventListener('change', async function(e) {
         const f = e.target.files[0];
         if (!f) return;
         const r = new FileReader();
-        r.onload = parseJson( processGridObj );
+
+        const readComplete = new Promise(resolve => {
+            r.onload = function(e) {
+                try {
+                    const gridObj = JSON.parse(e.target.result);
+                    processGridObj(gridObj);
+                    resolve();
+                } catch (error) {
+                    alert('Invalid Grid Upload');
+                    resolve();
+                }
+            };
+        });
         r.readAsText(f);
+        await readComplete;
+        init3DEnvironment();
     });
     uploadBtn.addEventListener('click', handleJsonUpload);
 }
@@ -490,5 +529,3 @@ export async function readGridState() {
     const grid = getGrid(tileSize);
     return new Grid(grid, tileSize);
 }
-
-export { initEventsPromise };
