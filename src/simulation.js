@@ -73,9 +73,11 @@ export async function init3DEnvironment() {
         - 3d tiles will be added on top of this platform
     */
 
+    // group EVERYTHING in the environment
     const world = new THREE.Group();
     scene.add(world);
 
+    // platform prop constants
     const gridObj = await readGridState();
     const PLATFORM_WIDTH = gridObj.resolution === 64 ? 512 : 1024;
     const PLATFORM_HEIGHT = gridObj.resolution === 64 ? 512 : 1024; // this is redudant but if we have time we can explore other dimensions
@@ -83,6 +85,7 @@ export async function init3DEnvironment() {
     const SMOOTHNESS = 5;
     const EDGE_RADIUS = 2;
     
+    // platform geo
     const platformGeo = new RoundedBoxGeometry(PLATFORM_WIDTH, PLATFORM_DEPTH, PLATFORM_HEIGHT, SMOOTHNESS, EDGE_RADIUS);
     const platformMat = new THREE.MeshStandardMaterial({ color: DIRT });
     const platform = new THREE.Mesh(platformGeo, platformMat);
@@ -93,61 +96,59 @@ export async function init3DEnvironment() {
         Notes:
         - 3d tiles 
     */
-    
-    let numTiles = gridObj.rows;
+    const numTiles = gridObj.rows;
     const TILE_SIZE = PLATFORM_WIDTH / numTiles;
     const TILE_HEIGHT = 4;
     const TILE_Z_OFFSET = 2.8;
     const TILE_SMOOTHNESS = 5;
     const TILE_RADIUS = 2;
-    
     const tileGeo = new RoundedBoxGeometry(TILE_SIZE, TILE_HEIGHT, TILE_SIZE, TILE_SMOOTHNESS, TILE_RADIUS);
 
-    for (let i = 0; i < numTiles; i++) {
-        for (let j = 0; j < numTiles; j++) {
+    function placeTile3D(i,j,tileType) {
+        const baseTileType = tileType === 'road-cw' ? 'road' : tileType;
+        const tileMat = new THREE.MeshStandardMaterial(getTileProps(baseTileType));
+        const tile = new THREE.Mesh(tileGeo, tileMat);
 
-            const tileType = getTileType(i,j, gridObj.grid);
-            let baseTileType;
-            if (tileType === 'road-cw') {
-                baseTileType = 'road';
-            } else {
-                baseTileType = tileType;
-            }
-            const tileMat = new THREE.MeshStandardMaterial(getTileProps(baseTileType));
-            const tile = new THREE.Mesh(tileGeo, tileMat);
+        const moveToLeft = -PLATFORM_WIDTH / 2;
+        const moveToBottom = -PLATFORM_HEIGHT / 2;
+        const moveToCenter = TILE_SIZE / 2;
+        const tileX = moveToLeft + moveToCenter + (i * TILE_SIZE);
+        const tileY = moveToBottom + moveToCenter + (j * TILE_SIZE);
+        const tileZ = PLATFORM_DEPTH / 2 + TILE_HEIGHT / 2;
+        tile.position.set(tileX, tileZ, tileY);
+        tile.castShadow = true;
+        tile.receiveShadow = true;
 
-            const moveToLeft = -PLATFORM_WIDTH / 2;
-            const moveToBottom = -PLATFORM_HEIGHT / 2;
-            const moveToCenter = TILE_SIZE / 2;
-            const tileX = moveToLeft + moveToCenter + (i * TILE_SIZE);
-            const tileY = moveToBottom + moveToCenter + (j * TILE_SIZE);
-            const tileZ = PLATFORM_DEPTH / 2 + TILE_HEIGHT / 2;
-            tile.position.set(tileX, tileZ, tileY);
+        world.add(tile);
 
-            tile.castShadow = true;
-            tile.receiveShadow = true;
+        if (tileType === 'road-cw') {
+            const crosswalkGeo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
+            const crowsswalkMat = new THREE.MeshStandardMaterial(getTileProps('road-cw'));
+            const crosswalk = new THREE.Mesh(crosswalkGeo, crowsswalkMat);
+            crosswalk.rotation.x = -Math.PI / 2;
+            const dir = getCrosswalkTileDir(i,j, gridObj.grid);
+            if (dir === 'N' || dir === 'S') crosswalk.rotation.z = Math.PI / 2;
 
-            world.add(tile);
-
-            if (tileType === 'road-cw') {
-                const crosswalkGeo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
-                const crowsswalkMat = new THREE.MeshStandardMaterial(getTileProps('road-cw'));
-                const crosswalk = new THREE.Mesh(crosswalkGeo, crowsswalkMat);
-                crosswalk.rotation.x = -Math.PI / 2;
-                const dir = getCrosswalkTileDir(i,j, gridObj.grid);
-                if (dir === 'N' || dir === 'S') {
-                    crosswalk.rotation.z = Math.PI / 2;
-                }
-                crosswalk.position.set(tileX, tileZ + TILE_Z_OFFSET, tileY);
-                crosswalk.receiveShadow = true;
-                crosswalk.castShadow = true;
-                world.add(crosswalk);
-            }
-            
+            crosswalk.position.set(tileX, tileZ + TILE_Z_OFFSET, tileY);
+            crosswalk.receiveShadow = true;
+            crosswalk.castShadow = true;
+            world.add(crosswalk);
         }
     }
 
+    for (let i = 0; i < numTiles; i++) {
+        for (let j = 0; j < numTiles; j++) {
+            const tileType = getTileType(i,j, gridObj.grid);
+            placeTile3D(i,j,tileType);
+        }
+    }
     world.rotation.y = Math.PI / 2;
+
+
+    /* (Agents -> LOADING)
+        Notes:
+        - loading in the agent models, cartoonish style
+    */
 
     function animate() {
         requestAnimationFrame(animate);
@@ -161,7 +162,7 @@ function getTileProps(type) {
         case 'grass':
             return {
                 color: GRASS,
-                roughness: 0.75,
+                roughness: 0.75, // might just do a texture later, same tile look for now
                 metalness: 0.05,
             }
         case 'sidewalk':
