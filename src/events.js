@@ -484,6 +484,7 @@ function initUploadBtn() {
         if (!f) return;
         const r = new FileReader();
 
+        // wait for the load/read to finish!!
         const readComplete = new Promise(resolve => {
             r.onload = function(e) {
                 try {
