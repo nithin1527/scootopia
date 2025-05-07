@@ -272,9 +272,18 @@ export async function init3DEnvironment() {
     goal.receiveShadow = true;
     world.add(goal)
 
+    // temp! replace with icon later
+    let isAgentMoving = false;
+    window.addEventListener('keydown', (event) => {
+        if (event.code === 'Space') {
+            isAgentMoving = !isAgentMoving;
+        }
+    });
+
     // very very basic agent movement <-- change to kinematics equations!
     const dt = 0.1;
     function updateAgentPos() {
+        if (!isAgentMoving) return;
         const dir = new Vector3(goalPos.x - agent.position.x, 0, goalPos.z - agent.position.z);
         dir.normalize();
         agent.position.add(dir.multiplyScalar(dt));
@@ -287,6 +296,9 @@ export async function init3DEnvironment() {
     }
     animate();
 }
+
+
+
 
 class Tile {
     constructor(id, grid_i, grid_j, word_x, world_y, world_z, type, size) {
@@ -301,7 +313,7 @@ class Tile {
     }
 
     getRandomPosIn(margin = 0.2) {
-        const newSize = this.size * (1-margin);
+        const newSize = this.size * (1-margin); // margin to prevent exactly on edge cases
         const x = this.x + (Math.random()-0.5) * newSize
         const y = this.y + (Math.random()-0.5) * newSize
         return new Vector3(x, y, this.depth);
