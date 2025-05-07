@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { readGridState } from './events.js';
 
+// COLORS!!!!
 const LIGHT_GRAY = "#F0F0F0";
 const WHITE = "#FFFFFF";
 const BLACK = "#000000";
@@ -12,12 +13,56 @@ const MUTED_GRAY = "#CCDCDA";
 const DIRT = "#D2B48C";
 const SUNLIGHT = "#FFF3E0";
 const PLATFORM_UNDER = "#080820";
-
 const SIDEWALK = "#D6D3D1";
 // const ROAD = "#444444"; // i like this one too
 const ROAD = "#333333";
 // const GRASS = "#22C55E"; // i like this one too
 const GRASS = "#16A34A";
+
+function getTileProps(type) {
+    switch (type) {
+        case 'grass':
+            return {
+                color: GRASS,
+                roughness: 0.75, // might just do a texture later, same tile look for now
+                metalness: 0.05,
+            }
+        case 'sidewalk':
+            return {
+                color: SIDEWALK,
+                roughness: 0.75,
+                metalness: 0.05,
+            }
+        case 'road':
+            return {
+                color: ROAD,
+                roughness: 0.75,
+                metalness: 0.05,
+            }
+        case 'road-cw':
+            return {
+                map: new THREE.TextureLoader().load('../assets/textures/road-cw.png'),
+                roughness: 0.6,
+                metalness: 0.1,
+                transparent: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                alphaTest: 0.5,
+            }
+    }
+}
+
+function getTileType(i,j, grid) {
+    const tileName = grid[i][j].split('-')[0];
+    const hasCrosswalk = grid[i][j].split('-')[1] === 'CW';
+    if (hasCrosswalk) return 'road-cw';
+    return tileName;
+}
+
+function getCrosswalkTileDir(i,j, grid) {
+    const dir = grid[i][j].split('-').find(term => ['N', 'S', 'E', 'W'].includes(term));
+    return dir;
+}
 
 export async function init3DEnvironment() {
     
@@ -134,12 +179,24 @@ export async function init3DEnvironment() {
             crosswalk.castShadow = true;
             world.add(crosswalk);
         }
+
+        return tile.position;
     }
 
+    const tileObjsDict = new Map();
     for (let i = 0; i < numTiles; i++) {
         for (let j = 0; j < numTiles; j++) {
             const tileType = getTileType(i,j, gridObj.grid);
-            placeTile3D(i,j,tileType);
+            const pos = placeTile3D(i,j,tileType);
+            const tileObj = new Tile(
+                i*numTiles + j,
+                i,j,
+                pos.x, pos.y, pos.z,
+                tileType,
+                TILE_SIZE,
+            )
+            const tileId = i*numTiles + j;
+            tileObjsDict.set(tileId, tileObj);
         }
     }
     world.rotation.y = Math.PI / 2;
@@ -149,55 +206,104 @@ export async function init3DEnvironment() {
         Notes:
         - loading in the agent models, cartoonish style
     */
+    // filter tiles by type
+    function getAllTilesOfType(type = 'sidewalk', grid) {
+        const tiles = [];
+        for (let i = 0; i < grid.length; i++) {
+            for (let j = 0; j < grid[i].length; j++) {
+                const tileId = i*grid.length + j;
+                const tileType = grid[i][j].split('-')[0];
+                if (tileType === type) 
+                    tiles.push(tileObjsDict.get(tileId))
+            }
+        }
+        return tiles;
+    }
+
+    // random initial position in grid with given type
+    function getInitialPosInGrid(type, grid) {
+        const tiles = getAllTilesOfType(type, grid);
+        const tileId = Math.floor(Math.random() * tiles.length);
+        const randomTile = tiles[tileId];
+        return {pos: randomTile.getRandomPosIn(), id: randomTile.id};
+    }
+
+    // sidewalk for MMV and pedestrian, road for driver
+    const { pos, id } = getInitialPosInGrid('sidewalk', gridObj.grid);
+    const minNumOfTiles = 10;
+    function manhattanDist(a,b) { return Math.abs(a.x-b.y) + Math.abs(a.y-b.y); }
+
+    // random goal position, same tile type as initial position 
+    // at least minNumOfTiles away from initial position
+    function getGoalPosInGrid(type, grid, id) {
+        const tiles = getAllTilesOfType(type, grid);
+        const initialTile = tileObjsDict.get(id);
+        const validTiles = tiles.filter(tile => {
+            return tile.id !== id && manhattanDist(tile, initialTile) > minNumOfTiles
+        });
+        const goalTileId = Math.floor(Math.random() * validTiles.length);
+        const goalTile = validTiles[goalTileId];
+        return goalTile.getRandomPosIn();
+    }
+
+    const goalPos = getGoalPosInGrid('sidewalk', gridObj.grid, id);
+
+    // ccylinder placeholder for agent
+    const agentGeo = new THREE.CylinderGeometry(10, 10, 50, 50);
+    const RED = "#FF0000";
+    const agentMat = new THREE.MeshStandardMaterial({ color: RED });
+    const agent = new THREE.Mesh(agentGeo, agentMat);
+    const AGENT_HEIGHT = 50;
+    agent.position.copy(pos);
+    agent.position.y = PLATFORM_DEPTH / 2 + TILE_HEIGHT / 2 + AGENT_HEIGHT / 2;
+    agent.castShadow = true;
+    agent.receiveShadow = true;
+    world.add(agent);
+
+    // goal is a cone
+    const goalGeo = new THREE.ConeGeometry(10, 50, 50);
+    const CYAN = "#00FFFF";
+    const goalMat = new THREE.MeshStandardMaterial({ color: CYAN });
+    const goal = new THREE.Mesh(goalGeo, goalMat);
+    const GOAL_HEIGHT = 50;
+    goal.position.copy(goalPos);
+    goal.position.y = PLATFORM_DEPTH / 2 + TILE_HEIGHT / 2 + GOAL_HEIGHT / 2;
+    goal.castShadow = true;
+    goal.receiveShadow = true;
+    world.add(goal)
+
+    // very very basic agent movement <-- change to kinematics equations!
+    const dt = 0.1;
+    function updateAgentPos() {
+        const dir = new Vector3(goalPos.x - agent.position.x, 0, goalPos.z - agent.position.z);
+        dir.normalize();
+        agent.position.add(dir.multiplyScalar(dt));
+    }
 
     function animate() {
         requestAnimationFrame(animate);
         renderer.render(scene, camera);        
+        updateAgentPos();
     }
     animate();
 }
 
-function getTileProps(type) {
-    switch (type) {
-        case 'grass':
-            return {
-                color: GRASS,
-                roughness: 0.75, // might just do a texture later, same tile look for now
-                metalness: 0.05,
-            }
-        case 'sidewalk':
-            return {
-                color: SIDEWALK,
-                roughness: 0.75,
-                metalness: 0.05,
-            }
-        case 'road':
-            return {
-                color: ROAD,
-                roughness: 0.75,
-                metalness: 0.05,
-            }
-        case 'road-cw':
-            return {
-                map: new THREE.TextureLoader().load('../assets/textures/road-cw.png'),
-                roughness: 0.6,
-                metalness: 0.1,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide,
-                alphaTest: 0.5,
-            }
+class Tile {
+    constructor(id, grid_i, grid_j, word_x, world_y, world_z, type, size) {
+        this.id = id;
+        this.i = grid_i;
+        this.j = grid_j;
+        this.x = word_x;
+        this.depth = world_z;
+        this.y = world_y;
+        this.type = type;
+        this.size = size;
     }
-}
 
-function getTileType(i,j, grid) {
-    const tileName = grid[i][j].split('-')[0];
-    const hasCrosswalk = grid[i][j].split('-')[1] === 'CW';
-    if (hasCrosswalk) return 'road-cw';
-    return tileName;
-}
-
-function getCrosswalkTileDir(i,j, grid) {
-    const dir = grid[i][j].split('-').find(term => ['N', 'S', 'E', 'W'].includes(term));
-    return dir;
+    getRandomPosIn(margin = 0.2) {
+        const newSize = this.size * (1-margin);
+        const x = this.x + (Math.random()-0.5) * newSize
+        const y = this.y + (Math.random()-0.5) * newSize
+        return new Vector3(x, y, this.depth);
+    }
 }

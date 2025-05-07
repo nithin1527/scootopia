@@ -433,17 +433,6 @@ function placeTileType(type, tileSize, i, j) {
     updateMapStatus();
 }
 
-function parseJson(callback) {
-    return function(e) {
-        try {
-            const gridObj = JSON.parse(e.target.result);
-            callback(gridObj); // for returning the object to process later
-        } catch (error) {
-            alert('Invalid Grid Upload');
-        }
-    }
-}
-
 function removePlacedTiles() {
     const placedTiles = grid.querySelectorAll('.placed-tile');
     placedTiles.forEach(tile => tile.remove());
