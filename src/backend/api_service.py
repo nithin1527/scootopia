@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-from agent import Agent, Vehicle, MMV, Pedestrian  # Import your classes from agent.py
+from agent import *
+import numpy as np
 
 app = FastAPI()
 
@@ -57,7 +58,6 @@ async def create_vehicle(agent_data: VehicleCreate):
         heading_angle=agent_data.heading_angle,
         length=agent_data.length,
         width=agent_data.width,
-        height=agent_data.height,
         front_overhang=agent_data.front_overhang,
         rear_overhang=agent_data.rear_overhang,
     )
@@ -75,7 +75,6 @@ async def create_mmv(agent_data: VehicleCreate):
         heading_angle=agent_data.heading_angle,
         length=agent_data.length,
         width=agent_data.width,
-        height=agent_data.height,
         front_overhang=agent_data.front_overhang,
         rear_overhang=agent_data.rear_overhang,  
     )
@@ -93,7 +92,6 @@ async def create_pedestrian(agent_data: AgentCreate):
         heading_angle=agent_data.heading_angle,
         length=agent_data.length,
         width=agent_data.width,
-        height=agent_data.height,
     )
     agents[agent_id] = new_pedestrian
     return {"agent_id": agent_id, "pedestrian": new_pedestrian}
@@ -109,15 +107,17 @@ async def get_agent(agent_id: int):
     return {"agent_id": agent_id, "agent": agent}
 
 @app.put("/agents/{agent_id}")
-async def update_agent(agent_id: int, velocity: float, acceleration: float):
+async def update_agent(agent_id: int, dt: float):
     """
-    Update an agent's velocity and acceleration.
+    Update agent's position.
+    TODO: Replace acceleration with RL
     """
     agent = agents.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    agent.velocity = velocity
-    agent.acceleration = acceleration
+    agent.acceleration = Position.distance(agent.position, agent.goal_position) / 10
+    agent.heading_angle = np.arctan((agent.goal_position.y - agent.position.y) / (agent.goal_position.x - agent.position.x))
+    agent.update(dt)
     return {"agent_id": agent_id, "agent": agent}
 
 @app.delete("/agents/{agent_id}")

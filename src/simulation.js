@@ -3,7 +3,7 @@ import { Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { readGridState } from "./events.js";
-import { createAgent } from "./api-client.js";
+import { createAgent, updateAgent } from "./api-client.js";
 
 // COLORS!!!!
 const LIGHT_GRAY = "#F0F0F0";
@@ -296,7 +296,7 @@ export async function init3DEnvironment() {
 	createAgent(agentData)
 		.then((response) => {
 			console.log("Agent created successfully:", response);
-			agentId = response.agent_id;
+			agentId = response.agent_id; // incorrect agent id
 		})
 		.catch((error) => {
 			console.error("Error:", error);
@@ -324,21 +324,37 @@ export async function init3DEnvironment() {
 
 	// very very basic agent movement <-- change to kinematics equations!
 	const dt = 0.1;
-	function updateAgentPos() {
+	function updateAgentPos(agentId) {
 		if (!isAgentMoving) return;
-		const dir = new Vector3(
-			goalPos.x - agent.position.x,
-			0,
-			goalPos.z - agent.position.z
-		);
-		dir.normalize();
-		agent.position.add(dir.multiplyScalar(dt));
+		else {
+			updateAgent(agentId, dt)
+				.then((response) => {
+					console.log("Agent updated successfully:", response);
+					agent.position.x = response.agent.position[0];
+					agent.position.z = response.agent.position[1];
+				})
+				.catch((error) => {
+					console.error("Error:", error);
+				});
+			if (agent.position.distanceTo(goal.position) < 1) {
+				isAgentMoving = false;
+				console.log("Agent reached the goal!");
+			}
+		}
+
+		// const dir = new Vector3(
+		// 	goalPos.x - agent.position.x,
+		// 	0,
+		// 	goalPos.z - agent.position.z
+		// );
+		// dir.normalize();
+		// agent.position.add(dir.multiplyScalar(dt));
 	}
 
 	function animate() {
 		requestAnimationFrame(animate);
 		renderer.render(scene, camera);
-		updateAgentPos();
+		updateAgentPos(agentId);
 	}
 	animate();
 }
