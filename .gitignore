@@ -1,0 +1,4 @@
+# Python backend
+__pycache__/
+.venv
+

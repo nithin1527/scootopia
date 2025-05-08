@@ -12,19 +12,19 @@ class Position:
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
 
 class Agent:
-    def __init__(self, position, heading_angle, length, width, height):
+    def __init__(self, position, goal_position, heading_angle, length, width):
         """
         Initialize an agent with position and heading angle.
         :param position: A tuple (x, y) representing the agent's position (m).
         :param heading_angle: A float representing the agent's heading angle in degrees.
         """
         self.position = Position(*position)
+        self.goal_position = Position(*goal_position)  # Default goal position
         self.velocity = 0.0 # m/s
         self.acceleration = 0.0 # m/s^2
         self.heading_angle = heading_angle
         self.length = length
         self.width = width
-        self.height = height
         
     def __repr__(self):
         return (f"Agent(position={self.position}, velocity={self.velocity}, "
@@ -63,19 +63,18 @@ class Agent:
         self.velocity += (k1_a + 2*k2_a + 2*k3_a + k4_a) / 6 * dt
     
 class Vehicle(Agent):
-    def __init__(self, position, heading_angle, length, width, height, front_overhang, rear_overhang, steering_angle=0.0):
+    def __init__(self, position, goal_position, heading_angle, length, width, front_overhang, rear_overhang, steering_angle=0.0):
         """
         Initializes a vehicle with position, velocity, acceleration, heading angle, and dimensions.
         :param position: A tuple (x, y) representing the vehicle's position (center of rear axle for RWD).
         :param heading_angle: A float representing the vehicle's heading angle in degrees.
         :param length: Length between axles.
         :param width: Width of the vehicle.
-        :param height: Height of the vehicle.
         :param front_overhang: Distance from the front axle to the front of the vehicle.
         :param rear_overhang: Distance from the rear axle to the rear of the vehicle.
         :param steering_angle: Steering angle of the vehicle in degrees between [-90, 90] in body frame.
         """
-        super().__init__(position, heading_angle, length, width, height)
+        super().__init__(position, goal_position, heading_angle, length, width)
         self.omega = 0.0 # angular velocity in degrees/s
         self.steering_angle = steering_angle
         self.width = width
@@ -144,20 +143,20 @@ class Vehicle(Agent):
     # TODO: approaching stop sign
     
 class MMV(Vehicle):
-    def __init__(self, position, velocity, acceleration, heading_angle, length, width, height, front_overhang, rear_overhang, steering_angle=0.0):
+    def __init__(self, position, goal_position, velocity, acceleration, heading_angle, length, width, front_overhang, rear_overhang, steering_angle=0.0):
         """
         Initializes a micro-mobility vehicle (MMV) as a type of vehicle.
         TODO add MMV specific properties for RL
         """
-        super().__init__(position, velocity, acceleration, heading_angle, length, width, height, front_overhang, rear_overhang, steering_angle)
+        super().__init__(position, goal_position, velocity, acceleration, heading_angle, length, width, front_overhang, rear_overhang, steering_angle)
 
     def __repr__(self):
         return (f"MMV(position={self.position}, velocity={self.velocity}, "
                 f"acceleration={self.acceleration}, heading_angle={self.heading_angle}, ")
     
 class Pedestrian(Agent):
-    def __init__(self, position, velocity, acceleration, heading_angle):
-        super().__init__(position, velocity, acceleration, heading_angle)
+    def __init__(self, position, goal_position, velocity, acceleration, heading_angle):
+        super().__init__(position, goal_position, velocity, acceleration, heading_angle)
 
     def __repr__(self):
         return (f"Pedestrian(position={self.position}, velocity={self.velocity}, "
