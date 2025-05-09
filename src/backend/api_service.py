@@ -144,8 +144,8 @@ async def update_agent(agent_id: int, request: UpdateAgent):
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     agent.velocity = Position.distance(agent.position, agent.goal_position) / 10
-    agent.heading_angle = np.arctan2(agent.goal_position.y - agent.position.y, agent.goal_position.x - agent.position.x)    
-    # agent.velocity = 0.1  # Set a constant velocity for simplicity
+    # can change this to rad unless it's easier to work with degrees in rl
+    agent.heading_angle = np.rad2deg(np.arctan2(agent.goal_position.y - agent.position.y, agent.goal_position.x - agent.position.x))    
     agent.update(dt)
     return {"agent_id": agent_id, "agent": agent.to_dict()}
 
