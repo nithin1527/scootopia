@@ -35,6 +35,7 @@ class Agent:
     
     def to_dict(self):
         return {
+            "type": "agent",
             "position": self.position.to_dict(),
             "goal_position": self.goal_position.to_dict(),
             "heading_angle": self.heading_angle,
@@ -80,7 +81,7 @@ class Vehicle(Agent):
     def __init__(self, position, goal_position, heading_angle, length, width, front_overhang, rear_overhang, steering_angle=0.0):
         """
         Initializes a vehicle with position, velocity, acceleration, heading angle, and dimensions.
-        :param position: A tuple (x, y) representing the vehicle's position (center of rear axle for RWD).
+        :param position: A tuple (x, y) representing the vehicle's position (center of vehicle).
         :param heading_angle: A float representing the vehicle's heading angle in degrees.
         :param length: Length between axles.
         :param width: Width of the vehicle.
@@ -89,6 +90,7 @@ class Vehicle(Agent):
         :param steering_angle: Steering angle of the vehicle in degrees between [-90, 90] in body frame.
         """
         super().__init__(position, goal_position, heading_angle, length, width)
+        self.origin = self.pos_to_origin()
         self.omega = 0.0 # angular velocity in degrees/s
         self.steering_angle = steering_angle
         self.width = width
@@ -99,6 +101,36 @@ class Vehicle(Agent):
     def __repr__(self):
         return (f"Vehicle(position={self.position}, velocity={self.velocity}, "
                 f"acceleration={self.acceleration}, heading_angle={self.heading_angle}, ")
+    
+    def to_dict(self):
+        dict = super().to_dict()
+        dict["type"] = "vehicle"
+        dict["steering_angle"] = self.steering_angle
+        dict["front_overhang"] = self.front_overhang
+        dict["rear_overhang"] = self.rear_overhang
+        dict["omega"] = self.omega
+        dict["origin"] = self.origin.to_dict()
+        return dict
+    
+    def pos_to_origin(self):
+        """
+        Convert the vehicle's position to the origin of the vehicle (center of rear axle for RWD).
+        :return: A tuple (x, y) representing the vehicle's position at its origin.
+        """
+        heading_radians = np.radians(self.heading_angle)
+        x = self.position.x - (self.length / 2) * np.cos(heading_radians)
+        y = self.position.y - (self.length / 2) * np.sin(heading_radians)
+        return Position(x, y)
+    
+    def origin_to_pos(self):
+        """
+        Convert the vehicle's origin position to the center of the vehicle.
+        :return: A tuple (x, y) representing the vehicle's position at its center.
+        """
+        heading_radians = np.radians(self.heading_angle)
+        x = self.origin.x + (self.length / 2) * np.cos(heading_radians)
+        y = self.origin.y + (self.length / 2) * np.sin(heading_radians)
+        return Position(x, y)
     
     def update(self, dt):
         """
@@ -113,7 +145,12 @@ class Vehicle(Agent):
         steering_radians = np.radians(self.steering_angle)
         self.heading_angle += (self.velocity / self.length) * np.tan(steering_radians) * dt
         self.heading_angle = self.heading_angle % 360
-        super().update(dt)
+        
+        heading_radians = np.radians(self.heading_angle)
+        self.origin.x += self.velocity * np.cos(heading_radians) * dt
+        self.origin.y += self.velocity * np.sin(heading_radians) * dt
+        self.position = self.origin_to_pos()
+        self.velocity += self.acceleration * dt
 
     def accelerate(self, acceleration):
         self.acceleration = acceleration
@@ -168,10 +205,27 @@ class MMV(Vehicle):
         return (f"MMV(position={self.position}, velocity={self.velocity}, "
                 f"acceleration={self.acceleration}, heading_angle={self.heading_angle}, ")
     
+    def to_dict(self):
+        dict = super().to_dict()
+        dict["type"] = "mmv"
+        return dict
+    
 class Pedestrian(Agent):
-    def __init__(self, position, goal_position, velocity, acceleration, heading_angle):
-        super().__init__(position, goal_position, velocity, acceleration, heading_angle)
+    def __init__(self, position, goal_position, heading_angle, length, width):
+        super().__init__(position, goal_position, heading_angle, length, width)
 
     def __repr__(self):
         return (f"Pedestrian(position={self.position}, velocity={self.velocity}, "
                 f"acceleration={self.acceleration}, heading_angle={self.heading_angle}, ")
+    
+    def to_dict(self):
+        return {
+            "type": "pedestrian",
+            "position": self.position.to_dict(),
+            "goal_position": self.goal_position.to_dict(),
+            "heading_angle": self.heading_angle,
+            "length": self.length,
+            "width": self.width,
+            "velocity": self.velocity,
+            "acceleration": self.acceleration
+        }
