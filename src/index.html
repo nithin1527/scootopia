@@ -2,297 +2,750 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scootopia</title>
-    <link rel="stylesheet" href="./styles.css">
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.175.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.175.0/examples/jsm/"
-            }
-        }
-    </script>
-</head>
-<body class="min-h-screen relative overflow-hidden bg-white">
-  
-    <div class="bar">
-      <div class="absolute inset-0 bg-cover bg-center"></div>
-    </div>
-  
-    <div class="flex flex-row gap-10 ">
-        <div class="settings-bar relative z-10">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Scootopia</title>
+		<link rel="stylesheet" href="./styles.css" />
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://cdn.jsdelivr.net/npm/three@0.175.0/build/three.module.js",
+					"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.175.0/examples/jsm/"
+				}
+			}
+		</script>
+	</head>
+	<body class="min-h-screen relative overflow-hidden bg-white">
+		<div class="bar">
+			<div class="absolute inset-0 bg-cover bg-center"></div>
+		</div>
 
-            <div class="flex flex-row w-full gap-4 items-start relative mx-auto">
-                
-                <!-- density slider -->
-                <div class="param-container">
-    
-                    <div class="info-icon group relative"> 
-                        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M11 17h2v-6h-2zm1-8q.425 0 .713-.288T13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"/></svg>
-                        <div class="info-tooltip">
-                            <p>Controls how many MMVs, pedestrians, and vehicles appear in the simulation. <br><br> Higher density values create more crowded environments.</p>
-                        </div>
-                    </div>
-    
-                    <div class="flex flex-col justify-between h-full w-full">
-                        <div class="flex flex-row gap-2 items-center mb-2">
-                            <label for="densityRangeValue" class="param">Density</label>
-                            <span id="densityRangeValue" class="font-light rounded-full px-2 py-1 bg-gray-100 text-md">50</span>
-                        </div>
-        
-                        <!-- got this cool modern slider component from: https://madhuranjanui.com/docs/slider -->
-                        <input id="densityRangeInput" type="range" min="0" max="100" value="50" class="h-3 w-full cursor-pointer appearance-none rounded-full bg-gray-200 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-black-600 [&::-moz-range-thumb]:shadow-lg [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-violet-300/50 [&::-webkit-slider-thumb]:dark:hover:shadow-stone-300/50" oninput="document.getElementById('densityRangeValue').textContent = this.value" />
-                        <div class="flex justify-between text-xs text-gray-500">
-                            <span>0</span>
-                            <span>100</span>
-                        </div>
-                    </div>
-                </div>
-        
-                <!-- risk tolerance slider -->
-                <div class="param-container">
-                    <div class="info-icon group relative"> 
-                        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M11 17h2v-6h-2zm1-8q.425 0 .713-.288T13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"/></svg>
-                        <div class="info-tooltip">
-                            <p>Controls how likely MMVs, pedestrians, and vehicles are willing to engage in risky behavior.<br><br> Higher risk tolerance values produce more unsafe situations.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-col justify-between h-full w-full">
-                        <div class="flex flex-row gap-2 items-center mb-2">
-                            <label for="riskRangeValue" class="param">Risk Tolerance</label>
-                            <span id="riskRangeValue" class="font-light rounded-full px-2 py-1 bg-gray-100 text-md">50</span>
-                        </div>
-        
-                        <!-- got this cool modern slider component from: https://madhuranjanui.com/docs/slider -->
-                        <input id="riskRange" type="range" min="0" max="100" value="50" class="h-3 w-full cursor-pointer appearance-none rounded-full bg-gray-200 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-black-600 [&::-moz-range-thumb]:shadow-lg [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-violet-300/50 [&::-webkit-slider-thumb]:dark:hover:shadow-stone-300/50" oninput="document.getElementById('riskRangeValue').textContent = this.value" />
-                        <div class="flex justify-between text-xs text-gray-500">
-                            <span>0</span>
-                            <span>100</span>
-                        </div>
-                    </div>
-    
-                </div>
-    
-    
-                <div class="w-px bg-gray-300 rounded-full mx-4 self-stretch"></div>
-                
-                <!-- environment layout selection -->
-                <div class="param-container">
-                    <div class="flex flex-row justify-between items-center mb-2">
-                        <div class="environment-title font-light">Environment Layout</div>
-                        <div id="map-status" class="relative inline-block bg-gray-50 p-1 px-2 rounded-lg font-light text-xs flex flex-row items-center not-loaded gap-2">
-                            <div id="map-status-dot" class="w-1 h-1 rounded-full not-loaded-dot"></div>
-                            <span id="map-status-text">Map Not Loaded</span>
-                        </div>
-                    </div>
-                    <div class="flex flex-row gap-2">
-                        <div class="p-2 px-4 ring-1 ring-gray-200/50 rounded-lg flex flex-row gap-2 flex flex-row justify-center items-center">
-                            <!-- four way intersection attribution: <a href="https://www.flaticon.com/free-icons/road" title="road icons">Road icons created by Swifticons - Flaticon</a> -->
-                            <div id="layout-a" class="layout-icon active"><img src="../assets/icons/layout-A.png"/></div>
-        
-                            <!-- layout B - two-way -->
-                            <div id="layout-b" class="layout-icon">
-                                <svg class="w-14 h-14 self-center" width="64" height="64" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M5 19V5h1v14zm6.5 0v-3.077h1V19zm6.5 0V5h1v14zm-6.5-5.462v-3.076h1v3.077zm0-5.461V5h1v3.077z"/></svg>
-                            </div>
-                            
-                            <!-- three way roundabout image credit (I photoshopped the right road from the 4-way): 
+		<div class="flex flex-row gap-10">
+			<div class="settings-bar relative z-10">
+				<div class="flex flex-row w-full gap-4 items-start relative mx-auto">
+					<!-- density slider -->
+					<div class="param-container">
+						<div class="info-icon group relative">
+							<svg
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								xmlns="http://www.w3.org/2000/svg"
+							>
+								<path
+									fill="currentColor"
+									d="M11 17h2v-6h-2zm1-8q.425 0 .713-.288T13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"
+								/>
+							</svg>
+							<div class="info-tooltip">
+								<p>
+									Controls how many MMVs, pedestrians, and vehicles appear in
+									the simulation. <br /><br />
+									Higher density values create more crowded environments.
+								</p>
+							</div>
+						</div>
+
+						<div class="flex flex-col justify-between h-full w-full">
+							<div class="flex flex-row gap-2 items-center mb-2">
+								<label for="densityRangeValue" class="param">Density</label>
+								<span
+									id="densityRangeValue"
+									class="font-light rounded-full px-2 py-1 bg-gray-100 text-md"
+									>50</span
+								>
+							</div>
+
+							<!-- got this cool modern slider component from: https://madhuranjanui.com/docs/slider -->
+							<input
+								id="densityRangeInput"
+								type="range"
+								min="0"
+								max="100"
+								value="50"
+								class="h-3 w-full cursor-pointer appearance-none rounded-full bg-gray-200 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-black-600 [&::-moz-range-thumb]:shadow-lg [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-violet-300/50 [&::-webkit-slider-thumb]:dark:hover:shadow-stone-300/50"
+								oninput="document.getElementById('densityRangeValue').textContent = this.value"
+							/>
+							<div class="flex justify-between text-xs text-gray-500">
+								<span>0</span>
+								<span>100</span>
+							</div>
+						</div>
+					</div>
+
+					<!-- risk tolerance slider -->
+					<div class="param-container">
+						<div class="info-icon group relative">
+							<svg
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								xmlns="http://www.w3.org/2000/svg"
+							>
+								<path
+									fill="currentColor"
+									d="M11 17h2v-6h-2zm1-8q.425 0 .713-.288T13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"
+								/>
+							</svg>
+							<div class="info-tooltip">
+								<p>
+									Controls how likely MMVs, pedestrians, and vehicles are
+									willing to engage in risky behavior.<br /><br />
+									Higher risk tolerance values produce more unsafe situations.
+								</p>
+							</div>
+						</div>
+
+						<div class="flex flex-col justify-between h-full w-full">
+							<div class="flex flex-row gap-2 items-center mb-2">
+								<label for="riskRangeValue" class="param">Risk Tolerance</label>
+								<span
+									id="riskRangeValue"
+									class="font-light rounded-full px-2 py-1 bg-gray-100 text-md"
+									>50</span
+								>
+							</div>
+
+							<!-- got this cool modern slider component from: https://madhuranjanui.com/docs/slider -->
+							<input
+								id="riskRange"
+								type="range"
+								min="0"
+								max="100"
+								value="50"
+								class="h-3 w-full cursor-pointer appearance-none rounded-full bg-gray-200 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-black-600 [&::-moz-range-thumb]:shadow-lg [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-violet-300/50 [&::-webkit-slider-thumb]:dark:hover:shadow-stone-300/50"
+								oninput="document.getElementById('riskRangeValue').textContent = this.value"
+							/>
+							<div class="flex justify-between text-xs text-gray-500">
+								<span>0</span>
+								<span>100</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="w-px bg-gray-300 rounded-full mx-4 self-stretch"></div>
+
+					<!-- environment layout selection -->
+					<div class="param-container">
+						<div class="flex flex-row justify-between items-center mb-2">
+							<div class="environment-title font-light">Environment Layout</div>
+							<div
+								id="map-status"
+								class="relative inline-block bg-gray-50 p-1 px-2 rounded-lg font-light text-xs flex flex-row items-center not-loaded gap-2"
+							>
+								<div
+									id="map-status-dot"
+									class="w-1 h-1 rounded-full not-loaded-dot"
+								></div>
+								<span id="map-status-text">Map Not Loaded</span>
+							</div>
+						</div>
+						<div class="flex flex-row gap-2">
+							<div
+								class="p-2 px-4 ring-1 ring-gray-200/50 rounded-lg flex flex-row gap-2 flex flex-row justify-center items-center"
+							>
+								<!-- four way intersection attribution: <a href="https://www.flaticon.com/free-icons/road" title="road icons">Road icons created by Swifticons - Flaticon</a> -->
+								<div id="layout-a" class="layout-icon active">
+									<img src="../assets/icons/layout-A.png" />
+								</div>
+
+								<!-- layout B - two-way -->
+								<div id="layout-b" class="layout-icon">
+									<svg
+										class="w-14 h-14 self-center"
+										width="64"
+										height="64"
+										viewBox="0 0 24 24"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											d="M5 19V5h1v14zm6.5 0v-3.077h1V19zm6.5 0V5h1v14zm-6.5-5.462v-3.076h1v3.077zm0-5.461V5h1v3.077z"
+										/>
+									</svg>
+								</div>
+
+								<!-- three way roundabout image credit (I photoshopped the right road from the 4-way): 
                              <a href="https://www.flaticon.com/free-icons/road" title="road icons">Road icons created by Swifticons - Flaticon</a> -->
-                            <div id="layout-c" class="layout-icon"><img src="../assets/icons/layout-C.png"/></div>
-        
-                            <!-- separator -->
-                            <div class="w-px bg-gray-300 rounded-full self-stretch"></div>
-                            
-                            <!-- custom layout icon -->
-                             <div id="custom-layout" class="layout-icon layout-d">
-                                <svg class="text-cyan-500" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g class="edit-outline"><g fill="currentColor" fill-rule="evenodd" class="Vector" clip-rule="evenodd"><path d="M2 6.857A4.857 4.857 0 0 1 6.857 2H12a1 1 0 1 1 0 2H6.857A2.857 2.857 0 0 0 4 6.857v10.286A2.857 2.857 0 0 0 6.857 20h10.286A2.857 2.857 0 0 0 20 17.143V12a1 1 0 1 1 2 0v5.143A4.857 4.857 0 0 1 17.143 22H6.857A4.857 4.857 0 0 1 2 17.143z"/><path d="m15.137 13.219l-2.205 1.33l-1.033-1.713l2.205-1.33l.003-.002a1.2 1.2 0 0 0 .232-.182l5.01-5.036a3 3 0 0 0 .145-.157c.331-.386.821-1.15.228-1.746c-.501-.504-1.219-.028-1.684.381a6 6 0 0 0-.36.345l-.034.034l-4.94 4.965a1.2 1.2 0 0 0-.27.41l-.824 2.073a.2.2 0 0 0 .29.245l1.032 1.713c-1.805 1.088-3.96-.74-3.18-2.698l.825-2.072a3.2 3.2 0 0 1 .71-1.081l4.939-4.966l.029-.029c.147-.15.641-.656 1.24-1.02c.327-.197.849-.458 1.494-.508c.74-.059 1.53.174 2.15.797a2.9 2.9 0 0 1 .845 1.75a3.15 3.15 0 0 1-.23 1.517c-.29.717-.774 1.244-.987 1.457l-5.01 5.036q-.28.281-.62.487m4.453-7.126s-.004.003-.013.006z"/></g></g></svg>
-                             </div>
-                        </div>
-                        
-                        <!-- open Canvas Button -->
-                        <button id="open-canvas-btn" class="basic-btn">
-                            <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 8.71c0-1.474 0-2.21.393-2.64a1.5 1.5 0 0 1 .497-.36c.532-.236 1.231-.003 2.629.463c1.067.356 1.6.534 2.14.515a3 3 0 0 0 .588-.078c.525-.125.993-.437 1.929-1.06l1.382-.922c1.2-.8 1.799-1.2 2.487-1.291c.688-.093 1.372.135 2.739.591l1.165.388c.99.33 1.485.495 1.768.888S21 6.12 21 7.162v8.129c0 1.473 0 2.21-.393 2.64a1.5 1.5 0 0 1-.497.358c-.532.237-1.231.004-2.629-.462c-1.067-.356-1.6-.534-2.14-.515a3 3 0 0 0-.588.078c-.525.125-.993.437-1.929 1.06l-1.382.922c-1.2.8-1.799 1.2-2.487 1.291c-.688.093-1.372-.135-2.739-.591l-1.165-.388c-.99-.33-1.485-.495-1.768-.888S3 17.88 3 16.838zm6-2.071V20.5M15 3v14"/></svg>
-                            Canvas 
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- play simulation button /// will fix later
+								<div id="layout-c" class="layout-icon">
+									<img src="../assets/icons/layout-C.png" />
+								</div>
+
+								<!-- separator -->
+								<div class="w-px bg-gray-300 rounded-full self-stretch"></div>
+
+								<!-- custom layout icon -->
+								<div id="custom-layout" class="layout-icon layout-d">
+									<svg
+										class="text-cyan-500"
+										viewBox="0 0 24 24"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<g class="edit-outline">
+											<g
+												fill="currentColor"
+												fill-rule="evenodd"
+												class="Vector"
+												clip-rule="evenodd"
+											>
+												<path
+													d="M2 6.857A4.857 4.857 0 0 1 6.857 2H12a1 1 0 1 1 0 2H6.857A2.857 2.857 0 0 0 4 6.857v10.286A2.857 2.857 0 0 0 6.857 20h10.286A2.857 2.857 0 0 0 20 17.143V12a1 1 0 1 1 2 0v5.143A4.857 4.857 0 0 1 17.143 22H6.857A4.857 4.857 0 0 1 2 17.143z"
+												/>
+												<path
+													d="m15.137 13.219l-2.205 1.33l-1.033-1.713l2.205-1.33l.003-.002a1.2 1.2 0 0 0 .232-.182l5.01-5.036a3 3 0 0 0 .145-.157c.331-.386.821-1.15.228-1.746c-.501-.504-1.219-.028-1.684.381a6 6 0 0 0-.36.345l-.034.034l-4.94 4.965a1.2 1.2 0 0 0-.27.41l-.824 2.073a.2.2 0 0 0 .29.245l1.032 1.713c-1.805 1.088-3.96-.74-3.18-2.698l.825-2.072a3.2 3.2 0 0 1 .71-1.081l4.939-4.966l.029-.029c.147-.15.641-.656 1.24-1.02c.327-.197.849-.458 1.494-.508c.74-.059 1.53.174 2.15.797a2.9 2.9 0 0 1 .845 1.75a3.15 3.15 0 0 1-.23 1.517c-.29.717-.774 1.244-.987 1.457l-5.01 5.036q-.28.281-.62.487m4.453-7.126s-.004.003-.013.006z"
+												/>
+											</g>
+										</g>
+									</svg>
+								</div>
+							</div>
+
+							<!-- open Canvas Button -->
+							<button id="open-canvas-btn" class="basic-btn">
+								<svg
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										d="M3 8.71c0-1.474 0-2.21.393-2.64a1.5 1.5 0 0 1 .497-.36c.532-.236 1.231-.003 2.629.463c1.067.356 1.6.534 2.14.515a3 3 0 0 0 .588-.078c.525-.125.993-.437 1.929-1.06l1.382-.922c1.2-.8 1.799-1.2 2.487-1.291c.688-.093 1.372.135 2.739.591l1.165.388c.99.33 1.485.495 1.768.888S21 6.12 21 7.162v8.129c0 1.473 0 2.21-.393 2.64a1.5 1.5 0 0 1-.497.358c-.532.237-1.231.004-2.629-.462c-1.067-.356-1.6-.534-2.14-.515a3 3 0 0 0-.588.078c-.525.125-.993.437-1.929 1.06l-1.382.922c-1.2.8-1.799 1.2-2.487 1.291c-.688.093-1.372-.135-2.739-.591l-1.165-.388c-.99-.33-1.485-.495-1.768-.888S3 17.88 3 16.838zm6-2.071V20.5M15 3v14"
+									/>
+								</svg>
+								Canvas
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- play simulation button /// will fix later
         <div class="flex items-center justify-center rounded-lg p-4 bg-white text-cyan-500 z-10">
             <svg width="64" height="64" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M5.669 4.76a1.47 1.47 0 0 1 2.04-1.177c1.062.454 3.442 1.533 6.462 3.276c3.021 1.744 5.146 3.267 6.069 3.958c.788.591.79 1.763.001 2.356c-.914.687-3.013 2.19-6.07 3.956c-3.06 1.766-5.412 2.832-6.464 3.28c-.906.387-1.92-.2-2.038-1.177c-.138-1.142-.396-3.735-.396-7.237c0-3.5.257-6.092.396-7.235"/></g></svg>
         </div> -->
-    </div>
+		</div>
 
-    <div id="simulation-area" class="simulation-area fixed top-0 left-0 w-screen h-screen z-0">
-    </div>
+		<div
+			id="simulation-area"
+			class="simulation-area fixed top-0 left-0 w-screen h-screen z-0"
+		></div>
 
-    <div id="canvas-container" class="canvas-container canvas-container-main relative z-10 pointer-events-none">
-        <div class="canvas-main flex justify-center items-center overflow-hidden flex-col gap-8">
-            <!-- tiles will be 64px x 64px, platform is 8 tiles long -->
-            <!-- consider a smaller grid discretization as an option - 32px? -->
-            <div id="grid" class="grid">
-                <div id="ghost-tile" class="ghost-tile hidden"></div>
-            </div>
+		<div
+			id="canvas-container"
+			class="canvas-container canvas-container-main relative z-10 pointer-events-none"
+		>
+			<div
+				class="canvas-main flex justify-center items-center overflow-hidden flex-col gap-8"
+			>
+				<!-- tiles will be 64px x 64px, platform is 8 tiles long -->
+				<!-- consider a smaller grid discretization as an option - 32px? -->
+				<div id="grid" class="grid">
+					<div id="ghost-tile" class="ghost-tile hidden"></div>
+				</div>
 
-            <div class="flex flex-row gap-4">
-                <button id="grid-clear-btn" class="grid-clear-btn" accesskey="">
-                    <svg class="text-blue-600" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 16c1.671 0 3-1.331 3-3s-1.329-3-3-3s-3 1.331-3 3s1.329 3 3 3"/><path fill="currentColor" d="M20.817 11.186a8.9 8.9 0 0 0-1.355-3.219a9 9 0 0 0-2.43-2.43a9 9 0 0 0-3.219-1.355a9 9 0 0 0-1.838-.18V2L8 5l3.975 3V6.002c.484-.002.968.044 1.435.14a7 7 0 0 1 2.502 1.053a7 7 0 0 1 1.892 1.892A6.97 6.97 0 0 1 19 13a7 7 0 0 1-.55 2.725a7 7 0 0 1-.644 1.188a7 7 0 0 1-.858 1.039a7.03 7.03 0 0 1-3.536 1.907a7.1 7.1 0 0 1-2.822 0a7 7 0 0 1-2.503-1.054a7 7 0 0 1-1.89-1.89A7 7 0 0 1 5 13H3a9 9 0 0 0 1.539 5.034a9.1 9.1 0 0 0 2.428 2.428A8.95 8.95 0 0 0 12 22a9 9 0 0 0 1.814-.183a9 9 0 0 0 3.218-1.355a9 9 0 0 0 1.331-1.099a9 9 0 0 0 1.1-1.332A8.95 8.95 0 0 0 21 13a9 9 0 0 0-.183-1.814"/></svg>
-                    Clear
-                </button>
-                <button id="grid-delete-btn" class="grid-delete-btn">
-                    <svg class="text-red-500" width="20" height="20" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M296 64h-80a7.91 7.91 0 0 0-8 8v24h96V72a7.91 7.91 0 0 0-8-8"/><path fill="currentColor" d="M432 96h-96V72a40 40 0 0 0-40-40h-80a40 40 0 0 0-40 40v24H80a16 16 0 0 0 0 32h17l19 304.92c1.42 26.85 22 47.08 48 47.08h184c26.13 0 46.3-19.78 48-47l19-305h17a16 16 0 0 0 0-32M192.57 416H192a16 16 0 0 1-16-15.43l-8-224a16 16 0 1 1 32-1.14l8 224A16 16 0 0 1 192.57 416M272 400a16 16 0 0 1-32 0V176a16 16 0 0 1 32 0Zm32-304h-96V72a7.91 7.91 0 0 1 8-8h80a7.91 7.91 0 0 1 8 8Zm32 304.57A16 16 0 0 1 320 416h-.58A16 16 0 0 1 304 399.43l8-224a16 16 0 1 1 32 1.14Z"/></svg>
-                    Delete
-                </button>
-            </div>
-        </div>
-        <div class="canvas-settings-container flex flex-col h-full">
-            <!-- tile selection -->
-            <div class="flex flex-col w-full h-full">
+				<div class="flex flex-row gap-4">
+					<button id="grid-clear-btn" class="grid-clear-btn" accesskey="">
+						<svg
+							class="text-blue-600"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								fill="currentColor"
+								d="M12 16c1.671 0 3-1.331 3-3s-1.329-3-3-3s-3 1.331-3 3s1.329 3 3 3"
+							/>
+							<path
+								fill="currentColor"
+								d="M20.817 11.186a8.9 8.9 0 0 0-1.355-3.219a9 9 0 0 0-2.43-2.43a9 9 0 0 0-3.219-1.355a9 9 0 0 0-1.838-.18V2L8 5l3.975 3V6.002c.484-.002.968.044 1.435.14a7 7 0 0 1 2.502 1.053a7 7 0 0 1 1.892 1.892A6.97 6.97 0 0 1 19 13a7 7 0 0 1-.55 2.725a7 7 0 0 1-.644 1.188a7 7 0 0 1-.858 1.039a7.03 7.03 0 0 1-3.536 1.907a7.1 7.1 0 0 1-2.822 0a7 7 0 0 1-2.503-1.054a7 7 0 0 1-1.89-1.89A7 7 0 0 1 5 13H3a9 9 0 0 0 1.539 5.034a9.1 9.1 0 0 0 2.428 2.428A8.95 8.95 0 0 0 12 22a9 9 0 0 0 1.814-.183a9 9 0 0 0 3.218-1.355a9 9 0 0 0 1.331-1.099a9 9 0 0 0 1.1-1.332A8.95 8.95 0 0 0 21 13a9 9 0 0 0-.183-1.814"
+							/>
+						</svg>
+						Clear
+					</button>
+					<button id="grid-delete-btn" class="grid-delete-btn">
+						<svg
+							class="text-red-500"
+							width="20"
+							height="20"
+							viewBox="0 0 512 512"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								fill="none"
+								d="M296 64h-80a7.91 7.91 0 0 0-8 8v24h96V72a7.91 7.91 0 0 0-8-8"
+							/>
+							<path
+								fill="currentColor"
+								d="M432 96h-96V72a40 40 0 0 0-40-40h-80a40 40 0 0 0-40 40v24H80a16 16 0 0 0 0 32h17l19 304.92c1.42 26.85 22 47.08 48 47.08h184c26.13 0 46.3-19.78 48-47l19-305h17a16 16 0 0 0 0-32M192.57 416H192a16 16 0 0 1-16-15.43l-8-224a16 16 0 1 1 32-1.14l8 224A16 16 0 0 1 192.57 416M272 400a16 16 0 0 1-32 0V176a16 16 0 0 1 32 0Zm32-304h-96V72a7.91 7.91 0 0 1 8-8h80a7.91 7.91 0 0 1 8 8Zm32 304.57A16 16 0 0 1 320 416h-.58A16 16 0 0 1 304 399.43l8-224a16 16 0 1 1 32 1.14Z"
+							/>
+						</svg>
+						Delete
+					</button>
+				</div>
+			</div>
+			<div class="canvas-settings-container flex flex-col h-full">
+				<!-- tile selection -->
+				<div class="flex flex-col w-full h-full">
+					<!-- spacer - temp fix since MARGIN ISNT WORKING agh -->
+					<div class="h-5"></div>
 
-                <!-- spacer - temp fix since MARGIN ISNT WORKING agh -->
-                <div class="h-5"></div>
+					<!-- road tiles -->
+					<div>
+						<!-- road tile header (title + crosswalk toggle) -->
+						<div class="flex flex-row justify-between items-center px-8 py-4">
+							<div class="flex flex-row items-center gap-2">
+								<div class="p-1 bg-black text-white rounded-sm">
+									<svg
+										class="w-4 h-4"
+										width="20"
+										height="20"
+										viewBox="0 0 20 20"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											d="M5 2.75a.75.75 0 0 0-1.5 0v14.5a.75.75 0 0 0 1.5 0zm11.5 0a.75.75 0 0 0-1.5 0v14.5a.75.75 0 0 0 1.5 0zm-5.75 0a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0zm-1.5 8.5a.75.75 0 0 0 1.5 0v-2.5a.75.75 0 0 0-1.5 0zm0 3.5a.75.75 0 0 1 1.5 0v2.5a.75.75 0 0 1-1.5 0z"
+										/>
+									</svg>
+								</div>
+								<div class="text-xl font-light">Road Tiles</div>
+							</div>
+							<button id="crosswalk-btn" class="crosswalk-btn">
+								<svg
+									class="w-4 h-4 rotate-90"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="currentColor"
+										fill-rule="evenodd"
+										d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"
+									/>
+								</svg>
+								Crosswalk
+							</button>
+						</div>
 
-                <!-- road tiles -->
-                <div>
-                    <!-- road tile header (title + crosswalk toggle) -->
-                    <div class="flex flex-row justify-between items-center px-8 py-4">
-                        <div class="flex flex-row items-center gap-2">
-                            <div class="p-1 bg-black text-white rounded-sm">
-                                <svg class="w-4 h-4" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M5 2.75a.75.75 0 0 0-1.5 0v14.5a.75.75 0 0 0 1.5 0zm11.5 0a.75.75 0 0 0-1.5 0v14.5a.75.75 0 0 0 1.5 0zm-5.75 0a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0zm-1.5 8.5a.75.75 0 0 0 1.5 0v-2.5a.75.75 0 0 0-1.5 0zm0 3.5a.75.75 0 0 1 1.5 0v2.5a.75.75 0 0 1-1.5 0z"/></svg>
-                            </div>
-                            <div class="text-xl font-light">Road Tiles</div>
-                        </div>
-                        <button id="crosswalk-btn" class="crosswalk-btn">
-                            <svg class="w-4 h-4 rotate-90" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" fill-rule="evenodd" d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"/></svg>
-                            Crosswalk
-                        </button>
-                    </div>
+						<!-- road tiles -->
+						<div
+							id="road-tiles"
+							class="flex flex-row gap-4 px-8 py-4 bg-stone-50 items-center justify-center"
+						>
+							<button
+								id="road-N-tile"
+								class="active road-tile road-N-tile tile bg-stone-800 text-white"
+							>
+								<svg
+									class="small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 5v14m6-8l-6-6m-6 6l6-6"
+									/>
+								</svg>
+							</button>
+							<button
+								id="road-S-tile"
+								class="road-tile tile road-S-tile bg-stone-800 text-white"
+							>
+								<svg
+									class="small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 5v14m6-6l-6 6m-6-6l6 6"
+									/>
+								</svg>
+							</button>
+							<button
+								id="road-E-tile"
+								class="road-tile tile road-E-tile bg-stone-800 text-white"
+							>
+								<svg
+									class="small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 12h14m-6 6l6-6m-6-6l6 6"
+									/>
+								</svg>
+							</button>
+							<button
+								id="road-W-tile"
+								class="road-tile tile road-W-tile bg-stone-800 text-white"
+							>
+								<svg
+									class="small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<g fill="none">
+										<path
+											d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"
+										/>
+										<path
+											fill="currentColor"
+											d="M3.636 11.293a1 1 0 0 0 0 1.414l5.657 5.657a1 1 0 0 0 1.414-1.414L6.757 13H20a1 1 0 1 0 0-2H6.757l3.95-3.95a1 1 0 0 0-1.414-1.414z"
+										/>
+									</g>
+								</svg>
+							</button>
+							<button
+								id="road-X-tile"
+								class="road-tile tile road-X-tile bg-stone-800 text-white"
+							>
+								<svg
+									class="small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="1.5"
+										d="M5.7 9.3L3 12m0 0l2.7 2.7M3 12h18M9.3 5.7L12 3m0 0l2.7 2.7M12 3v18m2.7-2.7L12 21m0 0l-2.7-2.7m9-9L21 12m0 0l-2.7 2.7"
+									/>
+								</svg>
+							</button>
+						</div>
 
-                    <!-- road tiles -->
-                    <div id="road-tiles" class="flex flex-row gap-4 px-8 py-4 bg-stone-50 items-center justify-center">
-                        <button id="road-N-tile" class="active road-tile road-N-tile tile bg-stone-800 text-white">
-                            <svg class="small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m6-8l-6-6m-6 6l6-6"/></svg>
-                        </button>
-                        <button id="road-S-tile" class="road-tile tile road-S-tile bg-stone-800 text-white">
-                            <svg class="small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m6-6l-6 6m-6-6l6 6"/></svg>
-                        </button>
-                        <button id="road-E-tile" class="road-tile tile road-E-tile bg-stone-800 text-white">
-                            <svg class="small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6 6l6-6m-6-6l6 6"/></svg>
-                        </button>
-                        <button id="road-W-tile" class="road-tile tile road-W-tile bg-stone-800 text-white">
-                            <svg class="small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M3.636 11.293a1 1 0 0 0 0 1.414l5.657 5.657a1 1 0 0 0 1.414-1.414L6.757 13H20a1 1 0 1 0 0-2H6.757l3.95-3.95a1 1 0 0 0-1.414-1.414z"/></g></svg>
-                        </button>
-                        <button id="road-X-tile" class="road-tile tile road-X-tile bg-stone-800 text-white">
-                            <svg class="small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.7 9.3L3 12m0 0l2.7 2.7M3 12h18M9.3 5.7L12 3m0 0l2.7 2.7M12 3v18m2.7-2.7L12 21m0 0l-2.7-2.7m9-9L21 12m0 0l-2.7 2.7"/></svg>
-                        </button>
-                    </div>
+						<!-- crosswalk tiles -->
+						<div
+							id="road-CW-tiles"
+							class="hidden flex flex-row gap-4 px-8 py-4 bg-stone-50 items-center justify-center"
+						>
+							<button
+								id="road-CW-N-tile"
+								class="tile bg-stone-800 road-CW-N-tile text-white relative"
+							>
+								<svg
+									class="absolute bg-stone-800 rounded-lg small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 5v14m6-8l-6-6m-6 6l6-6"
+									/>
+								</svg>
+								<svg
+									class="w-12 h-12"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="currentColor"
+										fill-rule="evenodd"
+										d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"
+									/>
+								</svg>
+							</button>
 
-                    <!-- crosswalk tiles -->
-                    <div id="road-CW-tiles" class="hidden flex flex-row gap-4 px-8 py-4 bg-stone-50 items-center justify-center">
-                        <button id="road-CW-N-tile" class="tile bg-stone-800 road-CW-N-tile text-white relative">
-                            <svg class="absolute bg-stone-800 rounded-lg small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m6-8l-6-6m-6 6l6-6"/></svg>
-                            <svg class="w-12 h-12" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" fill-rule="evenodd" d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"/></svg>
-                        </button>
+							<button
+								id="road-CW-S-tile"
+								class="tile bg-stone-800 road-CW-S-tile text-white relative"
+							>
+								<svg
+									class="absolute bg-stone-800 rounded-lg small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 5v14m6-6l-6 6m-6-6l6 6"
+									/>
+								</svg>
+								<svg
+									class="w-12 h-12"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="currentColor"
+										fill-rule="evenodd"
+										d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"
+									/>
+								</svg>
+							</button>
 
-                        <button id="road-CW-S-tile" class="tile bg-stone-800 road-CW-S-tile text-white relative">
-                            <svg class="absolute bg-stone-800 rounded-lg small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m6-6l-6 6m-6-6l6 6"/></svg>
-                            <svg class="w-12 h-12" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" fill-rule="evenodd" d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"/></svg>
-                        </button>
+							<button
+								id="road-CW-E-tile"
+								class="tile bg-stone-800 road-CW-E-tile text-white relative"
+							>
+								<svg
+									class="w-12 h-12 rotate-90"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="currentColor"
+										fill-rule="evenodd"
+										d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"
+									/>
+								</svg>
+								<svg
+									class="absolute bg-stone-800 rounded-lg small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="none"
+										stroke="currentColor"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 12h14m-6 6l6-6m-6-6l6 6"
+									/>
+								</svg>
+							</button>
 
-                        <button id="road-CW-E-tile" class="tile bg-stone-800 road-CW-E-tile text-white relative">
-                            <svg class="w-12 h-12 rotate-90" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" fill-rule="evenodd" d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"/></svg>
-                            <svg class="absolute bg-stone-800 rounded-lg small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6 6l6-6m-6-6l6 6"/></svg>
-                        </button>
+							<button
+								id="road-CW-W-tile"
+								class="tile bg-stone-800 road-CW-W-tile text-white relative"
+							>
+								<svg
+									class="w-12 h-12 rotate-90"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="currentColor"
+										fill-rule="evenodd"
+										d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"
+									/>
+								</svg>
+								<svg
+									class="absolute bg-stone-800 rounded-lg small"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<g fill="none">
+										<path
+											d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"
+										/>
+										<path
+											fill="currentColor"
+											d="M3.636 11.293a1 1 0 0 0 0 1.414l5.657 5.657a1 1 0 0 0 1.414-1.414L6.757 13H20a1 1 0 1 0 0-2H6.757l3.95-3.95a1 1 0 0 0-1.414-1.414z"
+										/>
+									</g>
+								</svg>
+							</button>
+						</div>
+					</div>
 
-                        <button id="road-CW-W-tile" class="tile bg-stone-800 road-CW-W-tile text-white relative">
-                            <svg class="w-12 h-12 rotate-90" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" fill-rule="evenodd" d="M3 16h18v2H3zm0-5h18v2H3zm0-5h18v2H3z"/></svg>
-                            <svg class="absolute bg-stone-800 rounded-lg small" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none"><path d="M24 0v24H0V0zM12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M3.636 11.293a1 1 0 0 0 0 1.414l5.657 5.657a1 1 0 0 0 1.414-1.414L6.757 13H20a1 1 0 1 0 0-2H6.757l3.95-3.95a1 1 0 0 0-1.414-1.414z"/></g></svg>
-                        </button>
-                    </div>
-                </div>
+					<!-- spacer -->
+					<div class="h-8"></div>
 
-                <!-- spacer -->
-                <div class="h-8"></div>
+					<!-- sidewalk & grass tiles -->
+					<div>
+						<!-- sidewalk & grass title -->
+						<div class="flex flex-row justify-between items-center px-8 py-4">
+							<div class="flex flex-row items-center gap-2">
+								<div class="p-1 bg-black text-white rounded-sm">
+									<svg
+										width="20"
+										height="20"
+										viewBox="0 0 20 20"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											d="M6.854 3.146v.002l.003.002l.008.008l.029.03q.037.038.103.11c.088.094.212.233.362.411c.3.357.703.873 1.123 1.519c.538.827 1.11 1.878 1.518 3.082c.409-1.204.98-2.255 1.518-3.082a16 16 0 0 1 1.123-1.519a12 12 0 0 1 .465-.521l.029-.03l.008-.008l.002-.002v-.001A.501.501 0 0 1 14 3.5v5.106c.251-.522.525-.947.794-1.29c.376-.478.74-.792 1.018-.99a3 3 0 0 1 .45-.267l.033-.015l.011-.005l.005-.002h.002l.001-.001A.5.5 0 0 1 17 6.5V14a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5a.5.5 0 0 1 .686-.464h.001l.002.001l.005.002l.011.005a1 1 0 0 1 .14.068c.086.046.204.116.343.215c.279.197.642.511 1.018.99c.27.342.543.767.794 1.29V3.5a.5.5 0 0 1 .854-.354"
+										/>
+									</svg>
+								</div>
+								<div class="text-xl font-light">Sidewalk & Grass Tiles</div>
+							</div>
+						</div>
 
-                <!-- sidewalk & grass tiles -->
-                <div>
-                    <!-- sidewalk & grass title -->
-                    <div class="flex flex-row justify-between items-center px-8 py-4">
-                        <div class="flex flex-row items-center gap-2">
-                            <div class="p-1 bg-black text-white rounded-sm">
-                                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M6.854 3.146v.002l.003.002l.008.008l.029.03q.037.038.103.11c.088.094.212.233.362.411c.3.357.703.873 1.123 1.519c.538.827 1.11 1.878 1.518 3.082c.409-1.204.98-2.255 1.518-3.082a16 16 0 0 1 1.123-1.519a12 12 0 0 1 .465-.521l.029-.03l.008-.008l.002-.002v-.001A.501.501 0 0 1 14 3.5v5.106c.251-.522.525-.947.794-1.29c.376-.478.74-.792 1.018-.99a3 3 0 0 1 .45-.267l.033-.015l.011-.005l.005-.002h.002l.001-.001A.5.5 0 0 1 17 6.5V14a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5a.5.5 0 0 1 .686-.464h.001l.002.001l.005.002l.011.005a1 1 0 0 1 .14.068c.086.046.204.116.343.215c.279.197.642.511 1.018.99c.27.342.543.767.794 1.29V3.5a.5.5 0 0 1 .854-.354"/></svg>
-                            </div>
-                            <div class="text-xl font-light">Sidewalk & Grass Tiles</div>
-                        </div>
-                        </div>
+						<!-- sidewalk & grass tiles -->
+						<div
+							class="flex flex-row gap-4 px-8 py-4 bg-stone-50 items-center justify-center"
+						>
+							<button
+								id="grass-tile"
+								class="tile bg-green-700 grass-tile text-white"
+							>
+								<svg
+									class="w-10 h-10 small"
+									width="20"
+									height="20"
+									viewBox="0 0 20 20"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										fill="currentColor"
+										d="M6.854 3.146v.002l.003.002l.008.008l.029.03q.037.038.103.11c.088.094.212.233.362.411c.3.357.703.873 1.123 1.519c.538.827 1.11 1.878 1.518 3.082c.409-1.204.98-2.255 1.518-3.082a16 16 0 0 1 1.123-1.519a12 12 0 0 1 .465-.521l.029-.03l.008-.008l.002-.002v-.001A.501.501 0 0 1 14 3.5v5.106c.251-.522.525-.947.794-1.29c.376-.478.74-.792 1.018-.99a3 3 0 0 1 .45-.267l.033-.015l.011-.005l.005-.002h.002l.001-.001A.5.5 0 0 1 17 6.5V14a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5a.5.5 0 0 1 .686-.464h.001l.002.001l.005.002l.011.005a1 1 0 0 1 .14.068c.086.046.204.116.343.215c.279.197.642.511 1.018.99c.27.342.543.767.794 1.29V3.5a.5.5 0 0 1 .854-.354"
+									/>
+								</svg>
+							</button>
+							<button
+								id="sidewalk-tile"
+								class="tile bg-[#C4B6A6] sidewalk-tile text-white"
+							></button>
+						</div>
+					</div>
 
-                    <!-- sidewalk & grass tiles -->
-                    <div class="flex flex-row gap-4 px-8 py-4 bg-stone-50 items-center justify-center">
-                        <button id="grass-tile" class="tile bg-green-700 grass-tile text-white">
-                            <svg class="w-10 h-10 small" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M6.854 3.146v.002l.003.002l.008.008l.029.03q.037.038.103.11c.088.094.212.233.362.411c.3.357.703.873 1.123 1.519c.538.827 1.11 1.878 1.518 3.082c.409-1.204.98-2.255 1.518-3.082a16 16 0 0 1 1.123-1.519a12 12 0 0 1 .465-.521l.029-.03l.008-.008l.002-.002v-.001A.501.501 0 0 1 14 3.5v5.106c.251-.522.525-.947.794-1.29c.376-.478.74-.792 1.018-.99a3 3 0 0 1 .45-.267l.033-.015l.011-.005l.005-.002h.002l.001-.001A.5.5 0 0 1 17 6.5V14a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5a.5.5 0 0 1 .686-.464h.001l.002.001l.005.002l.011.005a1 1 0 0 1 .14.068c.086.046.204.116.343.215c.279.197.642.511 1.018.99c.27.342.543.767.794 1.29V3.5a.5.5 0 0 1 .854-.354"/></svg>
-                        </button>
-                        <button id="sidewalk-tile" class="tile bg-[#C4B6A6] sidewalk-tile text-white"></button>
-                    </div>
-                </div>
+					<!-- spacer -->
+					<div class="h-8"></div>
 
-                <!-- spacer -->
-                <div class="h-8"></div>
+					<!-- grid discretization -->
+					<div>
+						<div class="flex flex-row justify-between items-center px-8 py-2">
+							<div class="flex flex-row items-center gap-2">
+								<div class="p-1 bg-black text-white rounded-sm">
+									<svg
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"
+										/>
+									</svg>
+								</div>
+								<div class="text-xl font-light">Grid Resolution</div>
+							</div>
+						</div>
 
-                <!-- grid discretization -->
-                <div>
-                    <div class="flex flex-row justify-between items-center px-8 py-2">
-                        <div class="flex flex-row items-center gap-2">
-                            <div class="p-1 bg-black text-white rounded-sm">
-                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg>
-                            </div>
-                            <div class="text-xl font-light">Grid Resolution</div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-row gap-4 px-8 py-4 items-center justify-center">
-                        <button id="grid-64-btn" data-tile-size="64" class="grid-btn active">
-                            <div class="text-3xl">64</div>
-                            <div class="text-lg">px</div>
-                        </button>
-                        
-                        <button id="grid-32-btn" data-tile-size="32" class="grid-btn">
-                            <div class="text-3xl">32</div>
-                            <div class="text-lg">px</div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- map save and upload buttons -->
-            <div class="flex justify-center my-8">
-                <!-- save button -->
-                <button id="save-btn" class="su-btn">
-                    <svg class="w-5 h-5" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7.707 10.293a1 1 0 1 0-1.414 1.414l3 3a1 1 0 0 0 1.414 0l3-3a1 1 0 0 0-1.414-1.414L11 11.586V6h5a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5v5.586zM9 4a1 1 0 0 1 2 0v2H9z"/></svg>
-                    Save
-                </button>
-    
-                <!-- upload button -->
-                <button id="upload-btn" class="su-btn">
-                    <svg class="w-5 h-5" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M8.71 7.71L11 5.41V15a1 1 0 0 0 2 0V5.41l2.29 2.3a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42l-4-4a1 1 0 0 0-.33-.21a1 1 0 0 0-.76 0a1 1 0 0 0-.33.21l-4 4a1 1 0 1 0 1.42 1.42M21 12a1 1 0 0 0-1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6a1 1 0 0 0-2 0v6a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-6a1 1 0 0 0-1-1"/></svg>
-                    Upload
-                    <input class="hidden" type="file" id="gridUpload" name="gridUpload" accept=".json, application/json">
-                </button>
-            </div>
-        </div>
-    </div>
+						<div
+							class="flex flex-row gap-4 px-8 py-4 items-center justify-center"
+						>
+							<button
+								id="grid-64-btn"
+								data-tile-size="64"
+								class="grid-btn active"
+							>
+								<div class="text-3xl">64</div>
+								<div class="text-lg">px</div>
+							</button>
 
-  
-    <script type="module">
-        import { initEvents } from './events.js';
-        import { init3DEnvironment } from './simulation.js'
-        initEvents();
-        init3DEnvironment();
-    </script>
+							<button id="grid-32-btn" data-tile-size="32" class="grid-btn">
+								<div class="text-3xl">32</div>
+								<div class="text-lg">px</div>
+							</button>
+						</div>
+					</div>
+				</div>
 
-  </body>
+				<!-- map save and upload buttons -->
+				<div class="flex justify-center my-8">
+					<!-- save button -->
+					<button id="save-btn" class="su-btn">
+						<svg
+							class="w-5 h-5"
+							width="20"
+							height="20"
+							viewBox="0 0 20 20"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								fill="currentColor"
+								d="M7.707 10.293a1 1 0 1 0-1.414 1.414l3 3a1 1 0 0 0 1.414 0l3-3a1 1 0 0 0-1.414-1.414L11 11.586V6h5a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5v5.586zM9 4a1 1 0 0 1 2 0v2H9z"
+							/>
+						</svg>
+						Save
+					</button>
+
+					<!-- upload button -->
+					<button id="upload-btn" class="su-btn">
+						<svg
+							class="w-5 h-5"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								fill="currentColor"
+								d="M8.71 7.71L11 5.41V15a1 1 0 0 0 2 0V5.41l2.29 2.3a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42l-4-4a1 1 0 0 0-.33-.21a1 1 0 0 0-.76 0a1 1 0 0 0-.33.21l-4 4a1 1 0 1 0 1.42 1.42M21 12a1 1 0 0 0-1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6a1 1 0 0 0-2 0v6a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-6a1 1 0 0 0-1-1"
+							/>
+						</svg>
+						Upload
+						<input
+							class="hidden"
+							type="file"
+							id="gridUpload"
+							name="gridUpload"
+							accept=".json, application/json"
+						/>
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<script type="module">
+			import { initEvents } from "./events.js";
+			import { init3DEnvironment } from "./simulation.js";
+            // window.onload = () => {
+			// 	localStorage.clear(); // Clear all localStorage data
+			// 	console.log("localStorage cleared on page reload");
+			// };
+			initEvents();
+			init3DEnvironment();
+			
+		</script>
+	</body>
 </html>
-

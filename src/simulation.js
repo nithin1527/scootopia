@@ -3,7 +3,7 @@ import { Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { readGridState } from "./events.js";
-import { createAgent, updateAgent } from "./api-client.js";
+import { createAgent, updateAgent, getAgent } from "./api-client.js";
 
 // COLORS!!!!
 const LIGHT_GRAY = "#F0F0F0";
@@ -19,6 +19,15 @@ const SIDEWALK = "#D6D3D1";
 const ROAD = "#333333";
 // const GRASS = "#22C55E"; // i like this one too
 const GRASS = "#16A34A";
+
+let agentCreated = false;
+const NUM_AGENTS = 1;
+
+// reloads the page several times for some reason
+// window.onload = () => {
+//     localStorage.clear(); // Clear all localStorage data
+//     console.log("localStorage cleared on page reload");
+// };
 
 function getTileProps(type) {
 	switch (type) {
@@ -272,6 +281,9 @@ export async function init3DEnvironment() {
 	const goalPos = getGoalPosInGrid("sidewalk", gridObj.grid, id);
 
 	// ccylinder placeholder for agent
+    let agents = {};
+    for (let i = 0; i < NUM_AGENTS; i++) {
+    }
 	const agentGeo = new THREE.CylinderGeometry(10, 10, 50, 50);
 	const RED = "#FF0000";
 	const agentMat = new THREE.MeshStandardMaterial({ color: RED });
@@ -284,23 +296,33 @@ export async function init3DEnvironment() {
 	world.add(agent);
 
 	// create agent in api
-	const agentData = {
-		position: [agent.position.x, agent.position.y],
-		goal_position: [goalPos.x, goalPos.y],
-		heading_angle: 0,
-		length: 20,
-		width: 20,
-	};
+	const agentId = localStorage.getItem("agentId");
+	if (!agentId) {
+		const agentData = {
+			position: [agent.position.x, agent.position.y],
+			goal_position: [goalPos.x, goalPos.y],
+			heading_angle: 0,
+			length: 20,
+			width: 20,
+		};
 
-	var agentId = 0;
-	createAgent(agentData)
-		.then((response) => {
-			console.log("Agent created successfully:", response);
-			agentId = response.agent_id; // incorrect agent id
-		})
-		.catch((error) => {
-			console.error("Error:", error);
+		createAgent(agentData)
+			.then((response) => {
+				console.log("Agent created successfully:", response);
+				localStorage.setItem("agentId", response.agent_id); // Save agent ID
+			})
+			.catch((error) => {
+				console.error("Error:", error);
+			});
+	} else {
+		getAgent(agentId).then((response) => {
+			console.log("Agent retrieved successfully:", response);
+			agent.position.x = response.agent.position.x;
+			agent.position.y = response.agent.position.y;
+			console.log("Retrieved agent position:", agent.position);
 		});
+		console.log("Agent already created with ID:", agentId);
+	}
 
 	// goal is a cone
 	const goalGeo = new THREE.ConeGeometry(10, 50, 50);
@@ -330,8 +352,9 @@ export async function init3DEnvironment() {
 			updateAgent(agentId, dt)
 				.then((response) => {
 					console.log("Agent updated successfully:", response);
-					agent.position.x = response.agent.position[0];
-					agent.position.z = response.agent.position[1];
+					agent.position.x = response.agent.position.x;
+					agent.position.y = response.agent.position.y;
+					console.log("Updated agent position:", agent.position);
 				})
 				.catch((error) => {
 					console.error("Error:", error);
@@ -341,14 +364,6 @@ export async function init3DEnvironment() {
 				console.log("Agent reached the goal!");
 			}
 		}
-
-		// const dir = new Vector3(
-		// 	goalPos.x - agent.position.x,
-		// 	0,
-		// 	goalPos.z - agent.position.z
-		// );
-		// dir.normalize();
-		// agent.position.add(dir.multiplyScalar(dt));
 	}
 
 	function animate() {

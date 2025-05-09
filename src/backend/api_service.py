@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List
 from agent import *
 import numpy as np
+import json
 
 app = FastAPI()
 
@@ -16,8 +17,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage for agents
-agents = {}
+def save_agents_to_file():
+    with open("agents.json", "w") as f:
+        json.dump({k: v.to_dict() for k, v in agents.items()}, f)
+
+def load_agents_from_file():
+    global agents
+    try:
+        with open("agents.json", "r") as f:
+            data = json.load(f)
+            agents = {
+                int(k): Agent(
+                    position=(v["position"]["x"], v["position"]["y"]),
+                    goal_position=(v["goal_position"]["x"], v["goal_position"]["y"]),
+                    heading_angle=v["heading_angle"],
+                    length=v["length"],
+                    width=v["width"],
+                )
+                for k, v in data.items()
+            }
+    except FileNotFoundError:
+        agents = {}
+
+# Load agents when the server starts
+load_agents_from_file()
 
 # Pydantic model for creating agents
 class AgentCreate(BaseModel):
@@ -30,6 +53,9 @@ class AgentCreate(BaseModel):
 class VehicleCreate(AgentCreate):
     front_overhang: float
     rear_overhang: float
+
+class UpdateAgent(BaseModel):
+    dt: float
 
 @app.post("/agents/create_agent/")
 async def create_agent(agent_data: AgentCreate):
@@ -45,6 +71,7 @@ async def create_agent(agent_data: AgentCreate):
         width=agent_data.width,
     )
     agents[agent_id] = new_agent
+    save_agents_to_file()
     return {"agent_id": agent_id, "agent": new_agent}
 
 @app.post("/agents/create_vehicle/")
@@ -96,7 +123,7 @@ async def create_pedestrian(agent_data: AgentCreate):
     agents[agent_id] = new_pedestrian
     return {"agent_id": agent_id, "pedestrian": new_pedestrian}
 
-@app.get("/agents/{agent_id}")
+@app.get("/agents/{agent_id}/")
 async def get_agent(agent_id: int):
     """
     Retrieve an agent by its ID.
@@ -106,19 +133,21 @@ async def get_agent(agent_id: int):
         raise HTTPException(status_code=404, detail="Agent not found")
     return {"agent_id": agent_id, "agent": agent}
 
-@app.put("/agents/{agent_id}")
-async def update_agent(agent_id: int, dt: float):
+@app.put("/agents/{agent_id}/")
+async def update_agent(agent_id: int, request: UpdateAgent):
     """
     Update agent's position.
-    TODO: Replace acceleration with RL
+    TODO: Replace velocity with RL
     """
+    dt = request.dt
     agent = agents.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    agent.acceleration = Position.distance(agent.position, agent.goal_position) / 10
-    agent.heading_angle = np.arctan((agent.goal_position.y - agent.position.y) / (agent.goal_position.x - agent.position.x))
+    agent.velocity = Position.distance(agent.position, agent.goal_position) / 10
+    agent.heading_angle = np.arctan2(agent.goal_position.y - agent.position.y, agent.goal_position.x - agent.position.x)    
+    # agent.velocity = 0.1  # Set a constant velocity for simplicity
     agent.update(dt)
-    return {"agent_id": agent_id, "agent": agent}
+    return {"agent_id": agent_id, "agent": agent.to_dict()}
 
 @app.delete("/agents/{agent_id}")
 async def delete_agent(agent_id: int):

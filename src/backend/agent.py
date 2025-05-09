@@ -10,6 +10,9 @@ class Position:
     
     def distance(self, other):
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
+    
+    def to_dict(self):
+        return {"x": self.x, "y": self.y}
 
 class Agent:
     def __init__(self, position, goal_position, heading_angle, length, width):
@@ -29,6 +32,17 @@ class Agent:
     def __repr__(self):
         return (f"Agent(position={self.position}, velocity={self.velocity}, "
                 f"acceleration={self.acceleration}, heading_angle={self.heading_angle})")
+    
+    def to_dict(self):
+        return {
+            "position": self.position.to_dict(),
+            "goal_position": self.goal_position.to_dict(),
+            "heading_angle": self.heading_angle,
+            "length": self.length,
+            "width": self.width,
+            "velocity": self.velocity,
+            "acceleration": self.acceleration
+        }
 
     def update(self, dt):
         """
