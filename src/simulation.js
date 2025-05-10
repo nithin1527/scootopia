@@ -272,18 +272,18 @@ export async function init3DEnvironment() {
 	const goalPos = getGoalPosInGrid("sidewalk", gridObj.grid, id);
 
 	// ccylinder placeholder for agent
-	
+
 	const AGENT_WIDTH = 30;
 	const AGENT_LENGTH = 60;
-	const AGENT_HEIGHT = 50;
+	const AGENT_HEIGHT = 10;
 	const FRONT_OVERHANG = 5;
 	const REAR_OVERHANG = 5;
-	// const agentGeo = new THREE.BoxGeometry(
-	// 	AGENT_LENGTH + FRONT_OVERHANG + REAR_OVERHANG,
-	// 	AGENT_HEIGHT,
-	// 	AGENT_WIDTH
-	// );
-    const agentGeo = new THREE.CylinderGeometry(10, 10, 50, 50);
+	const agentGeo = new THREE.BoxGeometry(
+		AGENT_LENGTH + FRONT_OVERHANG + REAR_OVERHANG,
+		AGENT_HEIGHT,
+		AGENT_WIDTH
+	);
+	// const agentGeo = new THREE.CylinderGeometry(10, 10, 50, 50);
 	const RED = "#FF0000";
 	const agentMat = new THREE.MeshStandardMaterial({ color: RED });
 	const agent = new THREE.Mesh(agentGeo, agentMat);
@@ -298,31 +298,31 @@ export async function init3DEnvironment() {
 	let agentId = localStorage.getItem("agentId");
 	if (!agentId) {
 		console.log("Creating new agent...");
-		// const agentData = {
-		// 	type: "vehicle",
-		// 	data: {
-		// 		position: [agent.position.x, agent.position.y],
-		// 		goal_position: [goalPos.x, goalPos.y],
-		// 		heading_angle: 0,
-		// 		length: AGENT_LENGTH,
-		// 		width: AGENT_WIDTH,
-		// 		front_overhang: 5,
-		// 		rear_overhang: 5,
-		// 	},
-		// };
+		const agentData = {
+			type: "vehicle",
+			data: {
+				position: [agent.position.x, agent.position.y],
+				goal_position: [goalPos.x, goalPos.y],
+				heading_angle: 0,
+				length: AGENT_LENGTH,
+				width: AGENT_WIDTH,
+				front_overhang: 5,
+				rear_overhang: 5,
+			},
+		};
 
-        const agentData = {
-            type: "pedestrian",
-            data: {
-                position: [agent.position.x, agent.position.y],
-                goal_position: [goalPos.x, goalPos.y],
-                heading_angle: 0,
-                length: 20,
-                width: 20,
-                front_overhang: 5,
-                rear_overhang: 5,
-            },
-        }
+		// const agentData = {
+		//     type: "pedestrian",
+		//     data: {
+		//         position: [agent.position.x, agent.position.y],
+		//         goal_position: [goalPos.x, goalPos.y],
+		//         heading_angle: 0,
+		//         length: 20,
+		//         width: 20,
+		//         front_overhang: 5,
+		//         rear_overhang: 5,
+		//     },
+		// }
 
 		try {
 			const response = await createAgent(agentData);
@@ -366,7 +366,7 @@ export async function init3DEnvironment() {
 		if (event.code === "Space") {
 			isAgentMoving = !isAgentMoving;
 		} else if (event.code === "KeyR") {
-            console.log("Resetting agent...");
+			console.log("Resetting agent...");
 			localStorage.removeItem("agentId");
 			window.location.reload();
 		}
@@ -381,15 +381,29 @@ export async function init3DEnvironment() {
 				.then((response) => {
 					agent.position.x = response.agent.position.x;
 					agent.position.z = response.agent.position.y;
-					console.log("Updated agent position:", agent.position);
+					agent.rotation.y = THREE.MathUtils.degToRad(
+						-response.agent.heading_angle
+					); // negative because of the way the world is set up?
+					// console.log("Updated agent position:", agent.position);
+					console.log(
+						"Agent heading angle:",
+						response.agent.heading_angle,
+						"steering angle:",
+						response.agent.steering_angle,
+                        "omega:", response.agent.omega
+					);
+					console.log(
+						"Distance to goal:",
+						goal.position.distanceTo(agent.position)
+					);
+					if (response.reached_goal == "True") {
+						console.log("Agent reached goal!");
+						isAgentMoving = false;
+					}
 				})
 				.catch((error) => {
 					console.error("Error:", error);
 				});
-			if (agent.position.distanceTo(goal.position) < 1) {
-				isAgentMoving = false;
-				console.log("Agent reached the goal!");
-			}
 		}
 	}
 

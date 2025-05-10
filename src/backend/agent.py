@@ -1,18 +1,5 @@
 import numpy as np
-
-class Position:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __repr__(self):
-        return f"Position(x={self.x}, y={self.y})"
-    
-    def distance(self, other):
-        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
-    
-    def to_dict(self):
-        return {"x": self.x, "y": self.y}
+from utils import *
 
 class Agent:
     def __init__(self, position, goal_position, heading_angle, length, width):
@@ -50,10 +37,16 @@ class Agent:
         Update the agent's position based on its velocity and acceleration using Euler method.
         :param dt: Time step for the update.
         """
+        # Simple update towards the goal position
+        self.velocity = Position.distance(self.position, self.goal_position) / 10
+        self.heading_angle = np.rad2deg(np.arctan2(self.goal_position.y - self.position.y, self.goal_position.x - self.position.x)) / 10
+
         heading_radians = np.radians(self.heading_angle)
         self.position.x += self.velocity * np.cos(heading_radians) * dt
         self.position.y += self.velocity * np.sin(heading_radians) * dt
         self.velocity += self.acceleration * dt
+
+        return self.position.distance(self.goal_position) < 20
 
     def update_rk4(self, dt):
         """
@@ -92,11 +85,13 @@ class Vehicle(Agent):
         super().__init__(position, goal_position, heading_angle, length, width)
         self.origin = self.pos_to_origin()
         self.omega = 0.0 # angular velocity in degrees/s
+        self.alpha = 0.0 # angular acceleration in degrees/s^2
         self.steering_angle = steering_angle
         self.width = width
         self.length = length
         self.front_overhang = front_overhang
         self.rear_overhang = rear_overhang
+        self.prev_error = 0.0
 
     def __repr__(self):
         return (f"Vehicle(position={self.position}, velocity={self.velocity}, "
@@ -137,20 +132,39 @@ class Vehicle(Agent):
         Update the vehicle's position based on its velocity and acceleration using Euler method.
         :param dt: Time step for the update.
         """
-        # Update the steering angle based on angular velocity
+        # Simple update towards the goal position
+        distance_to_goal = self.position.distance(self.goal_position)
+        if distance_to_goal < 10:
+            self.acceleration = -self.velocity / dt
+        else:
+            self.acceleration = distance_to_goal / 100
+
+        angular_diff = angle_between_vectors(self.origin, self.position, self.goal_position)
+        k_p = 0.5
+        k_d = 0.1
+        error = angular_diff
+        d_error = (error - self.prev_error) / dt
+        self.alpha = k_p * error + k_d * d_error
+        self.prev_error = error
+
+        self.omega += self.alpha * dt
+        self.omega *= 0.8
+        self.omega = np.clip(self.omega, -10, 10)
+
         self.steering_angle += self.omega * dt
-        self.steering_angle = np.clip(self.steering_angle, -90, 90)  # Ensure steering angle is within bounds
-        
-        # Update the heading angle based on steering angle
-        steering_radians = np.radians(self.steering_angle)
-        self.heading_angle += (self.velocity / self.length) * np.tan(steering_radians) * dt
-        self.heading_angle = self.heading_angle % 360
-        
+        self.steering_angle = np.clip(self.steering_angle, -89.9, 89.9)
+
+        if abs(self.velocity) > 0.01:
+            beta = (self.velocity / self.length) * np.tan(np.radians(self.steering_angle))
+            self.heading_angle = (self.heading_angle + np.degrees(beta * dt)) % 360
+
         heading_radians = np.radians(self.heading_angle)
+        self.velocity += self.acceleration * dt
         self.origin.x += self.velocity * np.cos(heading_radians) * dt
         self.origin.y += self.velocity * np.sin(heading_radians) * dt
         self.position = self.origin_to_pos()
-        self.velocity += self.acceleration * dt
+
+        return self.position.distance(self.goal_position) < 30
 
     def accelerate(self, acceleration):
         self.acceleration = acceleration
@@ -192,6 +206,19 @@ class Vehicle(Agent):
         self.update(dt)
 
     # TODO: approaching stop sign
+    def approach_stop_sign(self, stop_sign_position, dt):
+        """
+        Approach a stop sign using a simple rule-based approach.
+        :param stop_sign_position: The position of the stop sign.
+        :param dt: Time step for the update.
+        """
+        distance_to_stop_sign = self.position.distance(stop_sign_position)
+        if distance_to_stop_sign < 10:
+            self.acceleration = -self.velocity / dt
+        else:
+            self.acceleration = 0.0
+        self.update(dt)
+        return self.position.distance(stop_sign_position) < 1
     
 class MMV(Vehicle):
     def __init__(self, position, goal_position, velocity, acceleration, heading_angle, length, width, front_overhang, rear_overhang, steering_angle=0.0):

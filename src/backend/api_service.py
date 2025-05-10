@@ -60,16 +60,6 @@ def load_agents_from_file():
                     )
                 else:
                     raise ValueError(f"Unknown agent type: {v['type']}")
-            # agents = {
-            #     int(k): Agent(
-            #         position=(v["position"]["x"], v["position"]["y"]),
-            #         goal_position=(v["goal_position"]["x"], v["goal_position"]["y"]),
-            #         heading_angle=v["heading_angle"],
-            #         length=v["length"],
-            #         width=v["width"],
-            #     )
-            #     for k, v in data.items()
-            # }
     except FileNotFoundError:
         agents = {}
 
@@ -139,23 +129,6 @@ async def create_agent(agent_data: CreateAgentRequest):
     agents[agent_id] = new_agent
     save_agents_to_file()
     return {"agent_id": agent_id, "agent": new_agent}
-    
-@app.post("/agents/create_agent/")
-async def create_agent(agent_data: AgentCreate):
-    """
-    Create a new agent and store it in memory.
-    """
-    agent_id = len(agents) + 1
-    new_agent = Agent(
-        position=tuple(agent_data.position),
-        goal_position=tuple(agent_data.goal_position),  # Default goal position
-        heading_angle=agent_data.heading_angle,
-        length=agent_data.length,
-        width=agent_data.width,
-    )
-    agents[agent_id] = new_agent
-    save_agents_to_file()
-    return {"agent_id": agent_id, "agent": new_agent}
 
 @app.get("/agents/{agent_id}/")
 async def get_agent(agent_id: int):
@@ -177,11 +150,9 @@ async def update_agent(agent_id: int, request: UpdateAgent):
     agent = agents.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    agent.velocity = Position.distance(agent.position, agent.goal_position) / 10
-    # can change this to rad unless it's easier to work with degrees in rl
-    agent.heading_angle = np.rad2deg(np.arctan2(agent.goal_position.y - agent.position.y, agent.goal_position.x - agent.position.x))    
-    agent.update(dt)
-    return {"agent_id": agent_id, "agent": agent.to_dict()}
+    
+    reached_goal = agent.update(dt)
+    return {"agent_id": agent_id, "agent": agent.to_dict(), "reached_goal": str(reached_goal)}
 
 @app.delete("/agents/{agent_id}")
 async def delete_agent(agent_id: int):
