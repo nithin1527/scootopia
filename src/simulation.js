@@ -380,7 +380,7 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 			agent.setPos(candidatePos);
 			agent.setStartTile(tile);
 			if (agent.type === 'mmv') {
-				agent.isDismounted = tile.type === 'road' ? false : true;
+				agent.isDismounted = tile.type === 'sidewalk' ? true : false;
 			}
 			agent.setStartPos(agent.pos);
 			agent.render(renderMeta);
@@ -420,11 +420,9 @@ function spawnSingleAgent(type, agents, renderMeta, debug = false) {
 	
 	const start_tile = agent.startTile;
 	const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
-	console.log("path: ", renderMeta.tileDict);
 
 	if (start_tile && goal_tile) {
 		const path = getPath(start_tile, goal_tile, renderMeta.tileDict, agent.type);
-		console.log("path: ", path);
 		if (path) {
 			agent.curr_path = path;
 			agent.curr_path_idx = 0;
@@ -537,7 +535,7 @@ export async function init3DEnvironment() {
 		() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null)
 	);
 	const mmvAgents = Array.from({ length: numMMVs }, 
-		() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null)
+		() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null, true)
 	);
 
 	// agent start_pos initialization
@@ -558,14 +556,18 @@ export async function init3DEnvironment() {
 			if (correctGoal) agent.setGoal(correctGoal);
 		}
 	});
+
+	console.log(mmvAgents);
 	
 	// clear meshes rendered when spawning
 	agents.forEach(agent => agent.removeMeshFromWorld(renderMeta.world));
 
 	// just give type name "pedestrian", "driver", "mmv"
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	let debugAgent = spawnSingleAgent("driver", agents, newRenderMeta, true);
-	// console.log(debugAgent);
+	// let debugAgent = spawnSingleAgent("mmv", mmvAgents.filter(a => a.isDismounted), newRenderMeta, true);
+	let debugAgent = spawnSingleAgent("mmv", agents, newRenderMeta, true);
+	console.log(debugAgent);
+	// console.log(mmvAgents.filter(a => a.isDismounted));
 
 	// spawnAllAgents(agents, newRenderMeta);
 

@@ -339,13 +339,14 @@ export class Driver extends Agent {
 }
 
 export class MMV extends Agent {
-    constructor(id, startPos, goal, pos) {
+    constructor(id, startPos, goal, pos, isDismounted) {
         super(id, startPos, goal, pos);
         this.type = "mmv";
         this.width = MMV_WIDTH;
         this.length = MMV_LENGTH + MMV_FRONT_OVERHANG + MMV_REAR_OVERHANG;
         this.base = MMV_LENGTH;
         this.radius = MMV_LENGTH;
+        this.isDismounted = isDismounted;
     }
 
     reachedGoal() { return distance(this.pos, this.goal.pos) < PEDESTRIAN_GOAL_RADIUS; }
@@ -403,7 +404,6 @@ export class MMV extends Agent {
         this.origin = this.pos_to_origin();
         this.omega = 0.0; 
         this.steering_angle = 0.0;
-        this.isDismounted = false;
 
         this.sfm_velocity = new Vector2(0, 0);
     }

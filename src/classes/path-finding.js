@@ -100,8 +100,8 @@ export function getPath(startTile, goalTile, tileDict, agentType) {
                 if (agentType === 'driver' && !laneKeepingConstraint(newNode, currNode, goalTile)) 
                     continue
                 if (checkTileConstraints(childTile, agentType)) {
-                    console.log("New Node: ", newNode.tile.fullTileType);
-                    console.log("Curr Node: ", currNode.tile.fullTileType);
+                    // console.log("New Node: ", newNode.tile.fullTileType);
+                    // console.log("Curr Node: ", currNode.tile.fullTileType);
                     children.push(newNode)
                 };
             } 
