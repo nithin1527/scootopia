@@ -1,16 +1,16 @@
 import {Vector3} from "three";
 import { getCurrentTile , clip, getRandFromRange, normAngle} from "./util.js";
 
-function getPedestrianDir(agent) {
+function getTargetDir(agent) {
 	let targetPos = agent.curr_path[agent.curr_path_idx].getCenterPos();
 	return new Vector3(targetPos.x - agent.pos.x, 0, targetPos.z - agent.pos.z).normalize();
 }
 
 function nonGoalTileAction_pedestrian(agent) {
-	let dirToTile = getPedestrianDir(agent);
+	let dirToTile = getTargetDir(agent);
 	if (dirToTile.length() < getRandFromRange(5,20)) { agent.curr_path_idx++; }
 	if (agent.curr_path_idx < agent.curr_path.length) {
-		dirToTile = getPedestrianDir(agent);
+		dirToTile = getTargetDir(agent);
 		return {vx: dirToTile.x, vz: dirToTile.z};
 	}
 	return null;
@@ -42,34 +42,32 @@ export function getAccel(agent, curr_tile) {
 	}
 }
 
-export function stepDriver(agent, dt, renderMeta) {
-	let action = {dismount:1, accel:0, steer:0};
-	if (agent.mesh &&!agent.reachedGoal()) {
-		if (agent.curr_path_idx < agent.curr_path.length) {
-			let targetTile = agent.curr_path[agent.curr_path_idx];
-			let targetPos = targetTile.getCenterPos();
-			let dirToTile = new Vector3(targetPos.x - agent.pos.x, 0, targetPos.z - agent.pos.z);
-			if (dirToTile.length() < 64 ) { agent.curr_path_idx++; }
+function getActionFromDir(dir, agent, renderMeta) {
+	const curr_tile = getCurrentTile(agent.pos, renderMeta.tileDict, renderMeta.tileProps);
+	const targetHeading = Math.atan2(dir.z, dir.x);
+	let angleDiff = normAngle(targetHeading - agent.heading_angle);
+	let steer = clip(angleDiff / Math.PI, -1, 1);
+	return {accel:getAccel(agent, curr_tile), steer:steer}
+}
 
-			if (agent.curr_path_idx < agent.curr_path.length) {
-				// todo
-				const curr_tile = getCurrentTile(agent.pos, renderMeta.tileDict, renderMeta.tileProps);
-				const targetHeading = Math.atan2(dirToTile.z, dirToTile.x);
-				let angleDiff = normAngle(targetHeading - agent.heading_angle);
-				let max_angle = Math.PI;
-				let steer = clip(angleDiff / max_angle, -1, 1);
-				action = {accel:getAccel(agent, curr_tile), steer:steer};
-			}
-		} else {
-			let goal_dir = new Vector3(agent.goal.pos.x - agent.pos.x, 0, agent.goal.pos.z - agent.pos.z);
-			goal_dir.normalize();
-			const curr_tile = getCurrentTile(agent.pos, renderMeta.tileDict, renderMeta.tileProps);
-			const targetHeading = Math.atan2(goal_dir.z, goal_dir.x);
-			let angleDiff = normAngle(targetHeading - agent.heading_angle);
-			let max_angle = Math.PI;
-			let steer = clip(angleDiff / max_angle, -1, 1);
-			action = {accel:getAccel(agent, curr_tile), steer:steer};
-		}
+function goalTileAction_driver(agent, renderMeta) {
+	let goal_dir = new Vector3(agent.goal.pos.x - agent.pos.x, 0, agent.goal.pos.z - agent.pos.z);
+	goal_dir.normalize();
+	return getActionFromDir(goal_dir, agent, renderMeta);
+}
+
+function nonGoalTileAction_driver(agent) {
+	let dirToTile = getTargetDir(agent);
+	if (dirToTile.length() < 64) { agent.curr_path_idx++; }
+	if (agent.curr_path_idx < agent.curr_path.length) {
+		return getActionFromDir(dirToTile);
+	}
+}
+
+export function stepDriver(agent, dt, renderMeta) {
+	let action = {accel:0, steer:0};
+	if (agent.mesh && !agent.reachedGoal()) {
+		action = agent.curr_path_idx < agent.curr_path.length ? goalTileAction_driver(agent, renderMeta) : nonGoalTileAction_driver(agent, renderMeta);
 		agent.step(dt, action, renderMeta);
 	} else {
 		agent.removeFromWorld(renderMeta.world);
