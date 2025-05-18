@@ -141,22 +141,22 @@ export class Pedestrian extends Agent {
         selfDrivenForce = desired_velocity.sub(velocity).divideScalar(TAU);
         total_force.add(selfDrivenForce);
 
-        // interaction force for sfm
-        if (renderMeta.agents) {
-            for (let other of renderMeta.agents) {
-                if (other.id != this.id && other.mesh) {
-                    if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
-                        const dist = distance(this.pos, other.pos);
-                        const rel_dir = this.pos.clone().sub(other.pos).normalize();
-                        const radii_sum = this.radius + other.radius;
-                        if (dist < 20) {
-                            const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-                            total_force.add(new Vector2(interactionForce.x, interactionForce.z));
-                        }
-                    }
-                }
-            }
-        }
+        // // interaction force for sfm
+        // if (renderMeta.agents) {
+        //     for (let other of renderMeta.agents) {
+        //         if (other.id != this.id && other.mesh) {
+        //             if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
+        //                 const dist = distance(this.pos, other.pos);
+        //                 const rel_dir = this.pos.clone().sub(other.pos).normalize();
+        //                 const radii_sum = this.radius + other.radius;
+        //                 if (dist < 20) {
+        //                     const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
+        //                     total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         this.sfm_velocity.add(total_force.multiplyScalar(dt));
         if (this.sfm_velocity.length() > WALKING_SPEED) this.sfm_velocity.normalize().multiplyScalar(WALKING_SPEED);
@@ -231,7 +231,7 @@ export class Driver extends Agent {
     }
 
     initDynamics() {
-        this.v = 0;
+        this.v = 0; 
         this.a = 0;
         this.heading_angle = this.getHeadingAngle();
 
@@ -276,7 +276,7 @@ export class Driver extends Agent {
         // steering
         this.omega = steer_action * OMEGA;
         this.steering_angle += this.omega * dt;
-        this.steering_angle = clip(this.steering_angle, -Math.PI / 5, Math.PI / 5);
+        this.steering_angle = clip(this.steering_angle, -Math.PI / 4, Math.PI / 4);
 
         // heading angle -- bicycle model
         if (Math.abs(this.v) > 0.01) {
@@ -471,21 +471,21 @@ export class MMV extends Agent {
         total_force.add(selfDrivenForce);
 
         // interaction force for sfm
-        if (renderMeta.agents) {
-            for (let other of renderMeta.agents) {
-                if (other.id != this.id && other.mesh) {
-                    if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
-                        const dist = distance(this.pos, other.pos);
-                        const rel_dir = this.pos.clone().sub(other.pos).normalize();
-                        const radii_sum = this.radius + other.radius;
-                        if (dist < 20) {
-                            const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-                            total_force.add(new Vector2(interactionForce.x, interactionForce.z));
-                        }
-                    }
-                }
-            }
-        }
+        // if (renderMeta.agents) {
+        //     for (let other of renderMeta.agents) {
+        //         if (other.id != this.id && other.mesh) {
+        //             if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
+        //                 const dist = distance(this.pos, other.pos);
+        //                 const rel_dir = this.pos.clone().sub(other.pos).normalize();
+        //                 const radii_sum = this.radius + other.radius;
+        //                 if (dist < 20) {
+        //                     const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
+        //                     total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         this.sfm_velocity.add(total_force.multiplyScalar(dt));
         if (this.sfm_velocity.length() > WALKING_SPEED) this.sfm_velocity.normalize().multiplyScalar(WALKING_SPEED);
