@@ -565,7 +565,7 @@ export async function init3DEnvironment() {
 
 	// just give type name "pedestrian", "driver", "mmv"
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	// let debugAgent = spawnSingleAgent("driver", agents, newRenderMeta, true);
+	// let debugAgent = spawnSingleAgent("pedestrian", agents, newRenderMeta, true);
 	// console.log(debugAgent);
 
 	spawnAllAgents(agents, newRenderMeta);
@@ -575,8 +575,8 @@ export async function init3DEnvironment() {
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		// updatePosition(agents, dt, newRenderMeta);
-		updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		updatePosition(agents, dt, newRenderMeta);
+		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
 	window.addEventListener("keydown", (event) => {if (event.code == "Space") isAgentMoving = !isAgentMoving});

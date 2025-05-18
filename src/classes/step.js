@@ -1,18 +1,41 @@
 import {Vector3} from "three";
 import { getCurrentTile , clip, getRandFromRange, normAngle} from "./util.js";
+import { MAX_VELOCITY } from "../constants.js";
 
 function refocusAgent(agent, renderMeta) {
 	if (agent.isDistracted) {
 		// intrinsic refocus
-		distracted = Math.random() * 100 < agent.getRisk();
-		agent.setDistracted(distracted);
-	}
-}
+		let intrinsic = Math.random() * 100 < agent.getRisk();
 
-function refocusAgent(agent, renderMeta) {
-	if (agent.isDistracted) {
-		// intrinsic refocus
-		distracted = Math.random() * 100 < agent.getRisk();
+		// extrinsic refocus based on relative velocity
+		const query_radius = agent.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
+        const fov = agent.distracted ? Math.PI / 4 : Math.PI / 2;
+		// let avgRelVel = 0;
+		// if (renderMeta.agents && renderMeta.agents.length > 1) {
+		// 	let sum = 0, count = 0;
+		// 	for (let other of renderMeta.agents) {
+		// 		if (other.id != agent.id && other.mesh) {
+		// 			if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
+		// 				if (!agent.withinFOV(other, query_radius, fov)) continue;
+		// 				if (other !== agent && other.v !== undefined) {
+		// 					const relVel = Math.abs(agent.v - other.v);
+		// 					sum += relVel;
+		// 					count++;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// 	if (count > 0) avgRelVel = sum / count;
+		// }
+
+		// let extrinsic = Math.random() < avgRelVel / (2 * MAX_VELOCITY);
+		let extrinsic = false;
+		let distracted = intrinsic || extrinsic;
+		
+		if (!distracted) {
+			console.log("Agent " + agent.id + " refocused.");
+		}
+
 		agent.setDistracted(distracted);
 	}
 }
@@ -36,6 +59,7 @@ function getPedestrianAction(agent) {
 }
 
 export function stepPedestrian(agent, dt, renderMeta) {
+	refocusAgent(agent, renderMeta);
 	if (agent.mesh && !agent.reachedGoal()) {
 		agent.step(dt, getPedestrianAction(agent), renderMeta);
 	} else {

@@ -77,6 +77,7 @@ class Agent {
 
     removeFromWorld(world) {
         world.remove(this.mesh);
+        if (this.visionSector) world.remove(this.visionSector);
         this.mesh = null;
         this.startTile = null;
         this.startPos = null;
@@ -85,6 +86,7 @@ class Agent {
 
     removeMeshFromWorld(world) {
         world.remove(this.mesh);
+        if (this.visionSector) world.remove(this.visionSector);
         this.mesh = null;
     }
 
@@ -102,6 +104,14 @@ class Agent {
         const bbox2 = new THREE.Box3().setFromObject(other.mesh);
         return bbox1.intersectsBox(bbox2);
     } 
+
+    withinFOV(other, query_radius, fov) {
+        const dist = distance(this.pos, other.pos);
+        const rel_dir = other.pos.clone().sub(this.pos).normalize();
+        const forward = new Vector3(Math.cos(this.heading_angle), 0, Math.sin(this.heading_angle));
+        const angleToOther = forward.angleTo(rel_dir);
+        return dist < query_radius && angleToOther < fov / 2;
+    }
 
     setDistracted(distracted) {
         this.distracted = distracted;
@@ -140,8 +150,7 @@ export class Pedestrian extends Agent {
         const dir = Math.atan2(vz, vx); // for heading angle
 
         const query_radius = this.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
-        const fov = this.distracted ? Math.PI / 4 : Math.PI / 3;
-        
+        const fov = this.distracted ? Math.PI / 4 : Math.PI / 2;
 
         // update heading angle
         let angle_diff = dir - this.heading_angle;
@@ -168,9 +177,17 @@ export class Pedestrian extends Agent {
                         const dist = distance(this.pos, other.pos);
                         const rel_dir = this.pos.clone().sub(other.pos).normalize();
                         const radii_sum = this.radius + other.radius;
-                        if (dist < 20) {
-                            const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-                            total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+
+                        // if other is outside of fov and query radius, skip
+                        if (!this.withinFOV(other, query_radius, fov)) continue;
+                        console.log("Agent " + other.id + " in FOV of agent " + this.id, "with distance: " + dist);
+
+                        // other is within fov and query radius
+                        const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
+                        total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+
+                        if (this.collides(other)) {
+                            console.log("Collision detected between agent " + this.id + " and agent " + other.id);
                         }
                     }
                 }
@@ -178,6 +195,7 @@ export class Pedestrian extends Agent {
         }
 
         this.sfm_velocity.add(total_force.multiplyScalar(dt));
+        console.log("Agent " + this.id + " sfm_velocity: ", this.sfm_velocity);
         if (this.sfm_velocity.length() > WALKING_SPEED) this.sfm_velocity.normalize().multiplyScalar(WALKING_SPEED);
 
         // pos update
@@ -207,7 +225,10 @@ export class Pedestrian extends Agent {
     updateMesh(renderMeta) {
         this.mesh.position.copy(this.pos);
         this.mesh.position.y = renderMeta.pfProps.depth / 2 + renderMeta.tileProps.height / 2 + PEDESTRIAN_HEIGHT / 2;
-        this.mesh.rotation.y = -this.heading_angle;
+        this.mesh.rotation.y = this.heading_angle;
+        this.visionSector.rotation.z = -this.heading_angle;
+        this.visionSector.position.copy(this.pos);
+        this.visionSector.position.y = this.pos.y + 5;
     }
     
     render(renderMeta) {
@@ -222,6 +243,38 @@ export class Pedestrian extends Agent {
 
         renderMeta.world.add(pedestrian);
         this.mesh = pedestrian;
+
+        // attention sector for debugging
+        const query_radius = this.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
+        const fov = this.distracted ? Math.PI / 4 : Math.PI / 2;
+
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0);
+        const segments = 32;
+        for (let i = 0; i <= segments; i++) {
+            const theta = -fov / 2 + (fov * i) / segments;
+            shape.lineTo(query_radius * Math.cos(theta), query_radius * Math.sin(theta));
+        }
+        shape.lineTo(0, 0); // close the shape
+
+        const geometry = new THREE.ShapeGeometry(shape);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xFF0000,
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide,
+        });
+
+        const sector = new THREE.Mesh(geometry, material);
+
+        // Apply heading angle here — exactly once
+        sector.rotation.x = -Math.PI / 2;
+        sector.rotation.z = -this.heading_angle; // this is the ONLY rotation now
+        sector.position.set(this.pos.x, this.pos.y + 5, this.pos.z);
+
+        renderMeta.world.add(sector);
+        this.visionSector = sector;
+
     }
 }
 
