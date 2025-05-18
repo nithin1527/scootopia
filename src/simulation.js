@@ -142,8 +142,8 @@ function getTileProps(type) {
 }
 
 function getTileType(i, j, grid) {
-	const tileName = grid[i][j].split("-")[0];
-	const hasCrosswalk = grid[i][j].split("-")[1] === "CW";
+	const tileName = grid[j][i].split("-")[0];
+	const hasCrosswalk = grid[j][i].split("-")[1] === "CW";
 	if (hasCrosswalk) return "road-cw";
 	return tileName;
 }
@@ -235,20 +235,18 @@ function setupTiles(world, gridObj, pf_w, pf_h, pf_d) {
     - tile filtering logic for assigning initial and goal positions
 */
 // filter tiles by type
-function getAllTilesOfType(type = "sidewalk", grid, tileDict) {
+function getAllTilesOfType(type = "sidewalk", tileDict) {
 	const tiles = [];
-	for (let i = 0; i < grid.length; i++) {
-		for (let j = 0; j < grid[i].length; j++) {
-			const tileId = i * grid.length + j;
-			const tileType = grid[i][j].split("-")[0];
-			if (tileType === type) tiles.push(tileDict.get(tileId));
+	for (let tile of tileDict.values()) {
+		if (tile.type === type) {
+			tiles.push(tile);
 		}
 	}
 	return tiles;
 }
 
-function getAllEdgeTilesOfType(type, grid, tileDict) {
-	let tiles = getAllTilesOfType(type, grid, tileDict);
+function getAllEdgeTilesOfType(type, tileDict) {
+	let tiles = getAllTilesOfType(type, tileDict);
 	return tiles.filter(tile => tile.isEdgeTile);
 }
 
@@ -280,66 +278,48 @@ function getRandomObjFromList(list) {
 	return list[Math.floor(Math.random() * list.length)];
 }
 
-function getRandomCorrectRoadGoal(driverAgent, roadGoals, num_tiles) {
-	const start_i = driverAgent.startTile.grid_loc.x
-	const start_j = driverAgent.startTile.grid_loc.y;
-	const startTile_dir = driverAgent.startTile.fullTileType.split('-').find(part => ['N', 'S', 'E', 'W'].includes(part));
+function getRandomCorrectRoadGoal(agent, goals) {
+	const start_i = agent.startTile.grid_loc.x;
+	const start_j = agent.startTile.grid_loc.y;
+	const startDir = agent.startTile.dir;
 
-	// condition 1: remove goals behind or in the same row as the car (assuming North perspective)
-	const firstFilteredGoals = roadGoals.filter(g => {
-		const goal_i = g.grid_loc.x, goal_j = g.grid_loc.y; 
-		switch (startTile_dir) {
+	console.log(start_i, start_j);
+	
+	const candidates = goals.filter(g => {
+		const goal_i = g.grid_loc.x;
+		const goal_j = g.grid_loc.y;
+
+		if (start_i === goal_i && start_j === goal_j) return false;
+
+		switch (startDir) {
 			case 'N':
-				if (goal_i === start_i && goal_j > start_j) return false;
-				break;
+				if (goal_j > start_j) return false;
+				if (g.dir === 'N' && goal_j < start_j && goal_i === start_i) return true;
+				if (g.dir === 'E' && goal_i > start_i && goal_j <= start_j) return true;
+				if (g.dir === 'W' && goal_i < start_i && goal_j <= start_j) return true;
+				return false;
 			case 'S':
-				if (goal_i === start_i && goal_j < start_j) return false;
-				break;
+				if (goal_j < start_j) return false;
+				if (g.dir === 'S' && goal_j > start_j && goal_i === start_i) return true;
+				if (g.dir === 'W' && goal_i < start_i && goal_j >= start_j) return true;
+				if (g.dir === 'E' && goal_i > start_i && goal_j >= start_j) return true;
+				return false;
 			case 'E':
-				if (goal_j === start_j && goal_i > start_i) return false;
-				break;
+				if (goal_i < start_i) return false;
+				if (g.dir === 'E' && goal_i > start_i && goal_j === start_j) return true;
+				if (g.dir === 'S' && goal_j > start_j && goal_i >= start_i) return true;
+				if (g.dir === 'N' && goal_j < start_j && goal_i >= start_i) return true;
+				return false;
 			case 'W':
-				if (goal_j === start_j && goal_i < start_i) return false;
-				break;
+				if (goal_i > start_i) return false;
+				if (g.dir === 'W' && goal_i < start_i && goal_j === start_j) return true;
+				if (g.dir === 'N' && goal_j < start_j && goal_i <= start_i) return true;
+				if (g.dir === 'S' && goal_j > start_j && goal_i <= start_i) return true;
+				return false;
 		}
-		return true;
 	});
 
-	// condition 2: correct goal rules for each start dir
-	const correctGoals = [];
-	for (const g of firstFilteredGoals) {
-		const goal_i = g.grid_loc.x; 
-		const goal_j = g.grid_loc.y;
-		const goalTile_dir = g.fullTileType.split('-').find(part => ['N', 'S', 'E', 'W'].includes(part));
-		
-		let isCorrect = false;
-
-		// assume driiving on the left side
-		switch (startTile_dir) {
-			case 'N':
-				if (goal_j === 0 && goalTile_dir === 'N') isCorrect = true; // north
-				else if (goal_i === num_tiles - 1 && goalTile_dir === 'E' && goal_j <= start_j) isCorrect = true; // right is east
-				else if (goal_i === 0 && goalTile_dir === 'W' && goal_j <= start_j) isCorrect = true; // left is west
-				break;
-			case 'S':
-				if (goal_j === num_tiles - 1 && goalTile_dir === 'S') isCorrect = true; // south
-				else if (goal_i === 0 && goalTile_dir === 'W' && goal_j >= start_j) isCorrect = true; // right is west
-				else if (goal_i === num_tiles - 1 && goalTile_dir === 'E' && goal_j >= start_j) isCorrect = true; // left is east
-				break;
-			case 'E':
-				if (goal_i === 0 && goalTile_dir === 'E') isCorrect = true; // east
-				else if (goal_j === 0 && goalTile_dir === 'S' && goal_i <= start_i) isCorrect = true; // right is south
-				else if (goal_j === num_tiles - 1 && goalTile_dir === 'N' && goal_i <= start_i) isCorrect = true; // left is north
-				break;
-			case 'W':
-				if (goal_i === num_tiles - 1 && goalTile_dir === 'W') isCorrect = true; // west
-				else if (goal_j === num_tiles - 1 && goalTile_dir === 'N' && goal_i >= start_i) isCorrect = true; // right is north
-				else if (goal_j === 0 && goalTile_dir === 'S' && goal_i >= start_i) isCorrect = true; // left is south
-				break;
-		}
-		if (isCorrect) correctGoals.push(g);
-	}
-	return correctGoals.length > 0 ? getRandomObjFromList(correctGoals) : null;
+	return candidates.length > 0 ? getRandomObjFromList(candidates) : false;
 }
 
 function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta, minSep = 800) {
@@ -425,17 +405,21 @@ function spawnSingleAgent(type, agents, renderMeta, debug = false) {
 }
 
 function spawnAllAgents(agents, renderMeta) {
+	console.log(agents);
 	for (let agent of agents) {
-		agent.initDynamics();
-		agent.render(renderMeta);
-		const start_tile = agent.startTile;
-		const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
-		if (start_tile && goal_tile) {
-			const path = getPath(start_tile, goal_tile, renderMeta.tileDict, agent.type);
-			if (path) {
-				agent.curr_path = path;
-				agent.curr_path_idx = 0;
-				agent.goal_tile = goal_tile;
+		if (agent) {
+			agent.initDynamics();
+			agent.goal.render(renderMeta);
+			agent.render(renderMeta);
+			const start_tile = agent.startTile;
+			const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
+			if (start_tile && goal_tile) {
+				const path = getPath(start_tile, goal_tile, renderMeta.tileDict, agent.type);
+				if (path) {
+					agent.curr_path = path;
+					agent.curr_path_idx = 0;
+					agent.goal_tile = goal_tile;
+				}
 			}
 		}
 	}
@@ -481,8 +465,8 @@ export async function init3DEnvironment() {
 	let [tileDict, tileProps] = setupTiles(world, gridObj, pfProps.width, pfProps.height, pfProps.depth);
 
 	// goal creation
-	let roadGoalTiles = getAllEdgeTilesOfType("road", gridObj.grid, tileDict);
-	let sidewalkGoalTiles = getAllEdgeTilesOfType("sidewalk", gridObj.grid, tileDict);
+	let roadGoalTiles = getAllEdgeTilesOfType("road", tileDict);
+	let sidewalkGoalTiles = getAllEdgeTilesOfType("sidewalk", tileDict);
 	let roadGoalObjs = getGoalsFromEdgeTiles(roadGoalTiles, gridObj.rows);
 	let sidewalkGoalObjs = getGoalsFromEdgeTiles(sidewalkGoalTiles, gridObj.rows);
 	
@@ -497,9 +481,9 @@ export async function init3DEnvironment() {
 	// spawnGoals(sidewalkGoalObjs, renderMeta);
 
 	// density param logic: controls number of agents in simulation
-	const roadTiles = getAllTilesOfType("road", gridObj.grid, tileDict);
+	const roadTiles = getAllTilesOfType("road", tileDict);
 	const validRoadTiles = roadTiles.filter(tile => !tile.fullTileType.includes('X'));
-	const sidewalkTiles = getAllTilesOfType("sidewalk", gridObj.grid, tileDict);
+	const sidewalkTiles = getAllTilesOfType("sidewalk", tileDict);
 	const density = parseInt(document.getElementById('densityRangeInput').value, 10);
 	
 	const NUM_CARS_LIMITER = 0.3;
@@ -514,56 +498,68 @@ export async function init3DEnvironment() {
 	const numPedestrians = Math.floor( (density / 10) * maxPedestrians );
 	const numMMVs = Math.floor( (density / 10) * maxMMVs );
 
-	// --debug density output change
-	// console.log("numDrivers:", numDrivers, "numPedestrians:", numPedestrians, "numMMVs:", numMMVs);
-
-	// agent creation: assign random respective goals
-	const getRandomGoal = goals => goals[Math.floor(Math.random() * goals.length)];
-	let id_counter = 0;
-	const pedestrianAgents = Array.from({ length: numPedestrians }, 
-		() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null)
-	);
-	const driverAgents = Array.from({ length: numDrivers }, 
-		() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null)
-	);
-	const mmvAgents = Array.from({ length: numMMVs }, 
-		() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null, true)
-	);
-
-	// agent start_pos initialization
+	
+	let pedestrianAgents = [];
+	let driverAgents = [];
+	let mmvAgents = [];
 	let agents = [];
-	const minManhattanDist = 3;
-	assignStartPos(pedestrianAgents, agents, sidewalkTiles, minManhattanDist, renderMeta);
-	assignStartPos(mmvAgents, agents, sidewalkTiles, minManhattanDist, renderMeta);
-	assignStartPos(driverAgents, agents, validRoadTiles, minManhattanDist, renderMeta);
-	
-	driverAgents.forEach(agent => {
-		const correctGoal = getRandomCorrectRoadGoal(agent, roadGoalObjs, gridObj.rows);
-		if (correctGoal) agent.setGoal(correctGoal);
-	});
 
-	mmvAgents.forEach(agent => {
-		if (agent.goal.type === 'road' && agent.startTile.type === 'road') {
+	let maxAttempts = 5;
+	let attempts = 0;
+	while (attempts < maxAttempts) {
+		pedestrianAgents = [];
+		driverAgents = [];
+		mmvAgents = [];
+		agents = [];
+
+		// agent creation: assign random respective goals
+		const getRandomGoal = goals => goals[Math.floor(Math.random() * goals.length)];
+		let id_counter = 0;
+		pedestrianAgents = Array.from({ length: numPedestrians }, 
+			() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null)
+		);
+		driverAgents = Array.from({ length: numDrivers }, 
+			() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null)
+		);
+		mmvAgents = Array.from({ length: numMMVs }, 
+			() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null, true)
+		);
+	
+		// agent start_pos initialization
+		const minManhattanDist = 3;
+		assignStartPos(pedestrianAgents, agents, sidewalkTiles, minManhattanDist, renderMeta);
+		assignStartPos(mmvAgents, agents, sidewalkTiles, minManhattanDist, renderMeta);
+		assignStartPos(driverAgents, agents, validRoadTiles, minManhattanDist, renderMeta);
+		
+	
+		driverAgents.forEach(agent => {
 			const correctGoal = getRandomCorrectRoadGoal(agent, roadGoalObjs, gridObj.rows);
-			if (correctGoal) agent.setGoal(correctGoal);
-		}
-	});
-
-	console.log(mmvAgents);
+			if (correctGoal) 
+				agent.setGoal(correctGoal)
+			else 
+				agent.setGoal(null);
+		});
 	
-	// clear meshes rendered when spawning
-	agents.forEach(agent => agent.removeMeshFromWorld(renderMeta.world));
+		mmvAgents.forEach(agent => {
+			if (agent.goal.type === 'road' && agent.startTile.type === 'road') {
+				const correctGoal = getRandomCorrectRoadGoal(agent, roadGoalObjs, gridObj.rows);
+				if (correctGoal) agent.setGoal(correctGoal);
+			}
+		});
+		
+		agents.forEach(agent => agent.removeMeshFromWorld(renderMeta.world));
+		agents = agents.filter(a => a.goal);
+		driverAgents = driverAgents.filter(a => a.goal);
+		mmvAgents = mmvAgents.filter(a => a.goal);
+	
+		if (numDrivers === 0 || driverAgents.length > 0) break;
+		else attempts++;
+	}
 
-	// just give type name "pedestrian", "driver", "mmv"
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	// let debugAgent = spawnSingleAgent("mmv", mmvAgents.filter(a => a.isDismounted), newRenderMeta, true);
-	// let debugAgent = spawnSingleAgent("mmv", agents, newRenderMeta, true);
-	// console.log(debugAgent);
-	// console.log(mmvAgents.filter(a => a.isDismounted));
+	spawnAllAgents(driverAgents, newRenderMeta);	
 
-	spawnAllAgents(driverAgents, newRenderMeta);
-
-	const dt = 0.25 ;   
+	const dt = 0.2;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;

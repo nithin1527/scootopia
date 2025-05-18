@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Vector3, Vector2 } from "three";
-import { normAngle, angle_between_vectors, distance, clip } from "./util.js";
+import { normAngle, angle_between_vectors, distance, clip, getCurrentTile } from "./util.js";
 
 class Agent {
     constructor(id = null, startPos = null, goal = null, pos = null) {
@@ -248,9 +248,9 @@ export class Driver extends Agent {
         let dir = this.startTile.dir;
         const angleDict = {
             "N": -Math.PI / 2,
-            "E": Math.PI,
+            "E": 0,
             "S": Math.PI / 2,
-            "W": 0
+            "W": Math.PI
         }
         return angleDict[dir];
     }
@@ -571,6 +571,13 @@ export class Goal {
         this.type = type;
         this.grid_loc = grid_loc;
         this.fullTileType = fullTileType;
+        
+        let dir = null;
+        if (this.type === 'road' || this.type === 'road-cw') {
+            const parts = this.fullTileType.split('-');
+            dir = this.type === 'road-cw' ? parts[2] : parts[1];
+        }
+        this.dir = dir;
     }
 
     render(renderMeta) {
