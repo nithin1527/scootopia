@@ -404,12 +404,12 @@ function spawnSingleAgent(type, agents, renderMeta, debug = false) {
 	return agent;
 }
 
-function spawnAllAgents(agents, renderMeta) {
+function spawnAllAgents(agents, renderMeta, debug = false) {
 	console.log(agents);
 	for (let agent of agents) {
 		if (agent) {
 			agent.initDynamics();
-			agent.goal.render(renderMeta);
+			if (debug) agent.goal.render(renderMeta);
 			agent.render(renderMeta);
 			const start_tile = agent.startTile;
 			const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
@@ -487,8 +487,8 @@ export async function init3DEnvironment() {
 	const density = parseInt(document.getElementById('densityRangeInput').value, 10);
 	
 	const NUM_CARS_LIMITER = 0.3;
-	const NUM_PEDESTRIANS_LIMITER = 0.7;
-	const NUM_MMV_LIMITER = 0.7;
+	const NUM_PEDESTRIANS_LIMITER = 0.5;
+	const NUM_MMV_LIMITER = 0.4;
 	
 	const maxDrivers = validRoadTiles.length * NUM_CARS_LIMITER;
 	const maxPedestrians = Math.floor(sidewalkTiles.length * NUM_PEDESTRIANS_LIMITER);
@@ -557,14 +557,14 @@ export async function init3DEnvironment() {
 	}
 
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	spawnAllAgents(driverAgents, newRenderMeta);	
+	spawnAllAgents(agents, newRenderMeta);	
 
-	const dt = 0.2;   
+	const dt = 0.1;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(driverAgents, dt, newRenderMeta);
+		updatePosition(agents, dt, newRenderMeta);
 		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
