@@ -1,12 +1,11 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Union
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from agent import *
-import numpy as np
+# import numpy as np
 import json
 from enum import Enum
-
 
 app = FastAPI()
 

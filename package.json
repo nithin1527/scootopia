@@ -4,6 +4,10 @@
     "vite": "^6.3.2"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "three": "^0.175.0"
-  }
+  },
+  "type": "module",
+  "main": "api-server.js"
 }

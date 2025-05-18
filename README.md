@@ -3,9 +3,24 @@ Scootopia is a **S**imulation framework for modeling **C**ampus environments wit
 **O**verlapping interactions between **P**edestrians, MMVs, and vehicles to **I**nform real-world safety **A**pplications.
 
 ## Instructions
-1. Run the Python API. After running, see documentation [http://127.0.0.1:8000/docs](here).
+1. Run the Python API. 
+<!-- After running, see documentation [http://127.0.0.1:8000/docs](here). -->
 ```
+# cd to backend folder
 cd src/backend
-uvicorn api_service:app --reload
+
+# create a virtual environment and install dependencies
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# run the API
+python -m uvicorn api_service:app --reload
 ```
 2. Install the Live Server extension in VS Code and click `Go Live` in the bottom right corner.
+
+<!-- MISC
+cd src/backend
+uvicorn api_service:app --reload 
+-- add windows later
+-->

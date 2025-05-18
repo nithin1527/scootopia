@@ -53,7 +53,7 @@
 								<span
 									id="densityRangeValue"
 									class="font-light rounded-full px-2 py-1 bg-gray-100 text-md"
-									>50</span
+									>5</span
 								>
 							</div>
 
@@ -62,14 +62,14 @@
 								id="densityRangeInput"
 								type="range"
 								min="0"
-								max="100"
-								value="50"
+								max="10"
+								value="5"
 								class="h-3 w-full cursor-pointer appearance-none rounded-full bg-gray-200 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-black-600 [&::-moz-range-thumb]:shadow-lg [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-violet-300/50 [&::-webkit-slider-thumb]:dark:hover:shadow-stone-300/50"
 								oninput="document.getElementById('densityRangeValue').textContent = this.value"
 							/>
 							<div class="flex justify-between text-xs text-gray-500">
 								<span>0</span>
-								<span>100</span>
+								<span>10</span>
 							</div>
 						</div>
 					</div>
@@ -744,7 +744,7 @@
 			// 	console.log("localStorage cleared on page reload");
 			// };
 			initEvents();
-			init3DEnvironment();
+			// init3DEnvironment();
 			
 		</script>
 	</body>
