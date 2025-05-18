@@ -314,9 +314,6 @@ function getRandomCorrectRoadGoal(driverAgent, roadGoals, num_tiles) {
 		
 		let isCorrect = false;
 
-		// console.log(`goal_dir: ${goalTile_dir} | goal_i, goal_j: (${goal_i}, ${goal_j})`);
-		// console.log("goal tile: ", g.fullTileType);
-
 		// assume driiving on the left side
 		switch (startTile_dir) {
 			case 'N':
@@ -347,19 +344,14 @@ function getRandomCorrectRoadGoal(driverAgent, roadGoals, num_tiles) {
 
 function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta, minSep = 800) {
 	let vehicleTiles = tiles.slice();
-	let isMMVRoad = agents[0].type === 'mmv' && agents[0].goal.type === 'road';
-	// if (agents[0]) {
-	// 	let isMMVRoad = agents[0].type === 'mmv' && agents[0].goal.type === 'road';
-	// 	if (isMMVRoad) vehicleTiles = vehicleTiles.filter(tile => tile.type === 'road');
-	// }
 
 	for (let agent of agents) {
 		let placed = false, attempts = 0;
 		
 		while (!placed && attempts++ < 100) {
 
-			const tile = agent.type === 'driver' || isMMVRoad ? getRandomObjFromList(vehicleTiles) : getRandomObjFromList(tiles);
-			const candidatePos = agent.type === "driver" || isMMVRoad ? tile.getCenterPos() : tile.getRandomPosIn();
+			const tile = agent.type === 'driver' ? getRandomObjFromList(vehicleTiles) : getRandomObjFromList(tiles);
+			const candidatePos = agent.type === "driver" ? tile.getCenterPos() : tile.getRandomPosIn();
 
 			// condition 1: check minimum distance to goal so that agent is movable
 			if (manhattanDist(tile.grid_loc, agent.goal.grid_loc) <= minManhattanDist)
@@ -367,26 +359,26 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 			
 			// condition 2: agents should not be too close to each other
 			if (
-				(agent.type !== 'driver' && !isMMVRoad) && worldAgents
+				(agent.type !== 'driver') && worldAgents
 				.filter(a => a.startTile === agent.startTile)
 				.some(a => Math.hypot(candidatePos.x - a.pos.x, candidatePos.z - a.pos.z) < minSep)
 			) { continue }
 
 			// condition 3: at most 1 driver agent can occupy a tile
-			if ( (agent.type === 'driver' || isMMVRoad) && worldAgents.some(a => a.startTile === tile))
+			if ( (agent.type === 'driver') && worldAgents.some(a => a.startTile === tile))
 				continue
 			
 			// render agent at candidate pos (NOT A VALID SPAWN YET)
 			agent.setPos(candidatePos);
 			agent.setStartTile(tile);
 			if (agent.type === 'mmv') {
-				agent.isDismounted = tile.type === 'road' ? false : true;
+				agent.isDismounted = tile.type === 'sidewalk' ? false : false;
 			}
 			agent.setStartPos(agent.pos);
 			agent.render(renderMeta);
 
 			// condition 4: driver agent should be contained completely within the start tile
-			if (agent.type === 'driver' || isMMVRoad) {
+			if (agent.type === 'driver') {
 				const tileSizeHalf = renderMeta.tileProps.width / 2;
 				const tileCenter = tile.getCenterPos();
 				const minTileX = tileCenter.x - tileSizeHalf;
@@ -404,7 +396,7 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 			if (!collision) {
 				placed = true;
 				worldAgents.push(agent);
-				if (agent.type === 'driver' || isMMVRoad)
+				if (agent.type === 'driver')
 					vehicleTiles = vehicleTiles.filter(t => t !== tile);
 			} else { agent.removeFromWorld(renderMeta.world); }
 		}
@@ -420,11 +412,9 @@ function spawnSingleAgent(type, agents, renderMeta, debug = false) {
 	
 	const start_tile = agent.startTile;
 	const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
-	console.log("path: ", renderMeta.tileDict);
 
 	if (start_tile && goal_tile) {
 		const path = getPath(start_tile, goal_tile, renderMeta.tileDict, agent.type);
-		console.log("path: ", path);
 		if (path) {
 			agent.curr_path = path;
 			agent.curr_path_idx = 0;
@@ -567,6 +557,8 @@ export async function init3DEnvironment() {
 			if (correctGoal) agent.setGoal(correctGoal);
 		}
 	});
+
+	console.log(mmvAgents);
 	
 	// clear meshes rendered when spawning
 	agents.forEach(agent => agent.removeMeshFromWorld(renderMeta.world));
