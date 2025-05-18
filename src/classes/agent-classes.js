@@ -3,7 +3,7 @@ import { Vector3, Vector2 } from "three";
 import { normAngle, angle_between_vectors, distance, clip } from "./util.js";
 
 class Agent {
-    constructor(id = null, startPos = null, goal = null, pos = null) {
+    constructor(id = null, startPos = null, goal = null, pos = null, risk = null) {
         this.id = id;
         
         this.pos = pos; // curr pos
@@ -23,6 +23,9 @@ class Agent {
 
         this.curr_path = null; // tile objs
         this.curr_path_idx = -1;
+
+        this.risk = risk;
+        this.distracted = Math.random() * 100 < this.risk;
     }
 
     // i think this is how you do you do abstract methods in js...
@@ -99,6 +102,17 @@ class Agent {
         const bbox2 = new THREE.Box3().setFromObject(other.mesh);
         return bbox1.intersectsBox(bbox2);
     } 
+
+    setDistracted(distracted) {
+        this.distracted = distracted;
+    }
+    isDistracted() {
+        return this.distracted;
+    }
+
+    getRisk() {
+        return this.risk;
+    }
 }
 
 export class Pedestrian extends Agent {
@@ -110,6 +124,7 @@ export class Pedestrian extends Agent {
         this.radius = 8;
 
         this.sfm_velocity = new Vector2(0, 0);
+        this.distracted = false;
     }
 
     reachedGoal() { return distance(this.pos, this.goal.pos) < PEDESTRIAN_GOAL_RADIUS; }
@@ -123,6 +138,10 @@ export class Pedestrian extends Agent {
         let vx = action.vx * WALKING_SPEED;
         let vz = action.vz * WALKING_SPEED;
         const dir = Math.atan2(vz, vx); // for heading angle
+
+        const query_radius = this.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
+        const fov = this.distracted ? Math.PI / 4 : Math.PI / 3;
+        
 
         // update heading angle
         let angle_diff = dir - this.heading_angle;

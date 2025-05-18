@@ -482,6 +482,14 @@ function updateSingleAgentPosition(agent, dt, renderMeta) {
 	}
 }
 
+// later - change this to normal distribution based on data
+function generateRiskForAgent(risk) {
+	const max = risk + 10;
+	const min = risk - 10;
+	const range = max - min;
+	return Math.floor(Math.random() * range + min);
+}
+
 export async function init3DEnvironment() {
 
 	// environment setup
@@ -511,6 +519,7 @@ export async function init3DEnvironment() {
 	const validRoadTiles = roadTiles.filter(tile => !tile.fullTileType.includes('X'));
 	const sidewalkTiles = getAllTilesOfType("sidewalk", gridObj.grid, tileDict);
 	const density = parseInt(document.getElementById('densityRangeInput').value, 10);
+	const risk = parseInt(document.getElementById('riskRangeValue').value, 50);
 	
 	const NUM_CARS_LIMITER = 0.3;
 	const NUM_PEDESTRIANS_LIMITER = 0.7;
@@ -531,13 +540,13 @@ export async function init3DEnvironment() {
 	const getRandomGoal = goals => goals[Math.floor(Math.random() * goals.length)];
 	let id_counter = 0;
 	const pedestrianAgents = Array.from({ length: numPedestrians }, 
-		() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null)
+		() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null, generateRiskForAgent(risk))
 	);
 	const driverAgents = Array.from({ length: numDrivers }, 
-		() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null)
+		() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null, generateRiskForAgent(risk))
 	);
 	const mmvAgents = Array.from({ length: numMMVs }, 
-		() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null)
+		() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null, generateRiskForAgent(risk))
 	);
 
 	// agent start_pos initialization
@@ -564,10 +573,10 @@ export async function init3DEnvironment() {
 
 	// just give type name "pedestrian", "driver", "mmv"
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	let debugAgent = spawnSingleAgent("driver", agents, newRenderMeta, true);
+	// let debugAgent = spawnSingleAgent("driver", agents, newRenderMeta, true);
 	// console.log(debugAgent);
 
-	// spawnAllAgents(agents, newRenderMeta);
+	spawnAllAgents(agents, newRenderMeta);
 
 	const dt = 0.05;   
 	let isAgentMoving = false;
@@ -589,5 +598,9 @@ export async function init3DEnvironment() {
 }
 
 document.getElementById("densityRangeInput").addEventListener("input", async function () {
+	await init3DEnvironment();
+});
+
+document.getElementById("riskRange").addEventListener("input", async function () {
 	await init3DEnvironment();
 });

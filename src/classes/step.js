@@ -1,6 +1,14 @@
 import {Vector3} from "three";
 import { getCurrentTile , clip, getRandFromRange, normAngle} from "./util.js";
 
+function refocusAgent(agent, renderMeta) {
+	if (agent.isDistracted) {
+		// intrinsic refocus
+		distracted = Math.random() * 100 < agent.getRisk();
+		agent.setDistracted(distracted);
+	}
+}
+
 function getTargetDir(agent) {
 	let targetPos = agent.curr_path[agent.curr_path_idx].getCenterPos();
 	return new Vector3(targetPos.x - agent.pos.x, 0, targetPos.z - agent.pos.z).normalize();
