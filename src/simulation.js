@@ -571,7 +571,7 @@ export async function init3DEnvironment() {
 	})
 
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:false, showGoal:false};
-	spawnAllAgents(mmvAgents, newRenderMeta);	
+	spawnAllAgents(driverAgents, newRenderMeta);	
 
 
 	const dt = 0.05;   
@@ -579,7 +579,7 @@ export async function init3DEnvironment() {
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(mmvAgents, dt, newRenderMeta);
+		updatePosition(driverAgents, dt, newRenderMeta);
 		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 

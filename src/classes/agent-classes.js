@@ -433,6 +433,7 @@ export class Driver extends Agent {
     }
 
     updateMesh(renderMeta) {
+        if (this.is_speeder) this.mesh.material.color.set(ORANGE);
         this.mesh.position.copy(this.pos);
         this.mesh.position.y = renderMeta.pfProps.depth / 2 + renderMeta.tileProps.height / 2 + DRIVER_HEIGHT / 2;
         this.mesh.rotation.y = -this.heading_angle;
@@ -459,6 +460,7 @@ export class Driver extends Agent {
         
         renderMeta.world.add(driver);
         this.mesh = driver;
+        if (this.is_speeder) this.mesh.material.color.set(ORANGE);
     }
 }
 

@@ -7,9 +7,13 @@ export const ROAD = "#333333";
 export const GRASS = "#16A34A";
 export const CYAN = "#00FFFF";
 export const MAGENTA = "#FF00FF";
-
 export const PURPLE = "#800080";
 export const ORANGE = "#FFA500";
+
+// show constants
+export const SHOW_PEDESTRIAN = false;
+export const SHOW_MMV = false;
+export const SHOW_DRIVER = false;
 
 // limiter constants for init spawning distribution of agents
 // constants w1,w2,w3
