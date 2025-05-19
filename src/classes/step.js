@@ -66,6 +66,7 @@ function getPedestrianTargetDir(agent) {
 
 			agent.fuzzyOffset = new Vector3(rotatedX, 0, rotatedZ);
 			agent.lastFuzzyIdx = currIdx;
+			console.log("Agent " + agent.id + " fuzzy offset: " + agent.fuzzyOffset);
 		}
 
 		targetPos.add(agent.fuzzyOffset);

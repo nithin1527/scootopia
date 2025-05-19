@@ -526,13 +526,13 @@ export async function init3DEnvironment() {
 		const getRandomGoal = goals => goals[Math.floor(Math.random() * goals.length)];
 		let id_counter = 0;
 		pedestrianAgents = Array.from({ length: numPedestrians }, 
-			() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null)
+			() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null, generateRiskForAgent(risk))
 		);
 		driverAgents = Array.from({ length: numDrivers }, 
-			() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null)
+			() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null, generateRiskForAgent(risk))
 		);
 		mmvAgents = Array.from({ length: numMMVs }, 
-			() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null, true)
+			() => new MMV(id_counter++, null, getRandomGoal(sidewalkGoalObjs.concat(roadGoalObjs)), null, true, generateRiskForAgent(risk))
 		);
 	
 		// agent start_pos initialization
