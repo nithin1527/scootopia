@@ -58,6 +58,56 @@ function checkTileConstraints(tile, agentType) {
     }
 }
 
+// no direct sidewalk to road or vice versa
+function isValidTile2Seq(currTile, childTile) {
+    if (currTile.type === 'road' && childTile.type === 'sidewalk') {
+        return false;
+    } else if (currTile.type === 'sidewalk' && childTile.type ==='road') {
+        return false;
+    }
+    return true;
+}
+
+function isValidTileDir(currTile, childTile) {
+    if (
+        (currTile.dir === 'N' && childTile.dir === 'S') ||
+        (currTile.dir === 'S' && childTile.dir === 'N') ||
+        (currTile.dir === 'E' && childTile.dir === 'W') ||
+        (currTile.dir === 'W' && childTile.dir === 'E')
+    ) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function isTileInDir(currTile, childTile) {
+    const dx = childTile.grid_loc.x - currTile.grid_loc.x;
+    const dy = childTile.grid_loc.y - currTile.grid_loc.y;
+    switch (currTile.dir) {
+        case 'N':
+            return dx === 0 && dy === 1;
+        case 'S':
+            return dx === 0 && dy === -1;
+        case 'E':
+            return dx === 1 && dy === 0;
+        case 'W':
+            return dx === -1 && dy === 0;
+        default:
+            return false
+    }
+}
+
+function isValidCrosswalk(currTile, childTile) {
+    if (currTile.type !== 'road-cw') return true;
+
+    if (childTile.type === 'road-cw') return true;
+    if (childTile.type === 'sidewalk') return true;
+
+    if (childTile.type === 'road' && childTile.dir === currTile.dir) return true;
+    if (childTile.type === 'road' && childTile.dir === 'X') return isTileInDir(currTile, childTile);
+} 
+
 export function getPath(startTile, goalTile, tileDict, agentType) {
     let openList = [];
     let closedList = [];
@@ -97,13 +147,12 @@ export function getPath(startTile, goalTile, tileDict, agentType) {
             let childTile = getTileFromGridLoc(childGridLoc, tileDict);
             if (childTile) {
                 const newNode = new Node(childTile, currNode);
+                if (!isValidTile2Seq(currNode.tile, childTile)) continue;
+                if (agentType === 'mmv' && !isValidTileDir(currNode.tile, childTile) && !isValidCrosswalk(currNode.tile, childTile)) continue;
                 if (agentType === 'driver' && !laneKeepingConstraint(newNode, currNode, goalTile)) 
                     continue
-                if (checkTileConstraints(childTile, agentType)) {
-                    // console.log("New Node: ", newNode.tile.fullTileType);
-                    // console.log("Curr Node: ", currNode.tile.fullTileType);
-                    children.push(newNode)
-                };
+                if (!checkTileConstraints(childTile, agentType)) continue;
+                children.push(newNode);
             } 
         }
 

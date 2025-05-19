@@ -3,7 +3,7 @@ import { Vector3, Vector2 } from "three";
 import { normAngle, angle_between_vectors, distance, clip, getCurrentTile } from "./util.js";
 
 class Agent {
-    constructor(id = null, startPos = null, goal = null, pos = null) {
+    constructor(id = null, startPos = null, goal = null, pos = null, risk = null) {
         this.id = id;
         
         this.pos = pos; // curr pos
@@ -23,6 +23,9 @@ class Agent {
 
         this.curr_path = null; // tile objs
         this.curr_path_idx = -1;
+
+        this.risk = risk;
+        this.distracted = Math.random() * 100 < this.risk;
     }
 
     // i think this is how you do you do abstract methods in js...
@@ -75,6 +78,7 @@ class Agent {
 
     removeFromWorld(world) {
         world.remove(this.mesh);
+        if (this.visionSector) world.remove(this.visionSector);
         this.mesh = null;
         this.startTile = null;
         this.startPos = null;
@@ -100,11 +104,19 @@ class Agent {
         const bbox2 = new THREE.Box3().setFromObject(other.mesh);
         return bbox1.intersectsBox(bbox2);
     } 
+
+    withinFOV(other, query_radius, fov) {
+        const dist = distance(this.pos, other.pos);
+        const rel_dir = other.pos.clone().sub(this.pos).normalize();
+        const forward = new Vector3(Math.cos(this.heading_angle), 0, Math.sin(this.heading_angle));
+        const angleToOther = forward.angleTo(rel_dir);
+        return dist < query_radius && angleToOther < fov / 2;
+    }
 }
 
 export class Pedestrian extends Agent {
-    constructor(id, startPos, goal, pos) {
-        super(id, startPos, goal, pos);
+    constructor(id, startPos, goal, pos, risk) {
+        super(id, startPos, goal, pos, risk);
         this.type = "pedestrian";
         this.width = 16;
         this.length = 16;
@@ -123,6 +135,9 @@ export class Pedestrian extends Agent {
         // action tells us next step or target velocity 
         let vx = action.vx * WALKING_SPEED;
         let vz = action.vz * WALKING_SPEED;
+
+        const query_radius = this.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
+        const fov = this.distracted ? Math.PI / 4 : Math.PI / 2;
         
         // update heading angle
         const dir = Math.atan2(vz, vx); // for heading angle
@@ -150,6 +165,9 @@ export class Pedestrian extends Agent {
                         const dist = distance(this.pos, other.pos);
                         const rel_dir = this.pos.clone().sub(other.pos).normalize();
                         const radii_sum = this.radius + other.radius;
+
+                        if (!this.withinFOV(other, query_radius, fov)) continue;
+
                         if (dist < 20) {
                             const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
                             total_force.add(new Vector2(interactionForce.x, interactionForce.z));
@@ -190,6 +208,37 @@ export class Pedestrian extends Agent {
         this.mesh.position.copy(this.pos);
         this.mesh.position.y = renderMeta.pfProps.depth / 2 + renderMeta.tileProps.height / 2 + PEDESTRIAN_HEIGHT / 2;
         this.mesh.rotation.y = -this.heading_angle;
+
+        if (renderMeta.showSector) {
+            // vision sector updates
+            // remove both sectors from world if they exist
+            if (this.normalVisionSector) {
+                renderMeta.world.remove(this.normalVisionSector);
+            }
+            if (this.distractedVisionSector) {
+                renderMeta.world.remove(this.distractedVisionSector);
+            }
+    
+            // add the correct sector based on distracted state
+            if (this.distracted) {
+                if (this.distractedVisionSector) {
+                    renderMeta.world.add(this.distractedVisionSector);
+                    this.visionSector = this.distractedVisionSector;
+                }
+            } else {
+                if (this.normalVisionSector) {
+                    renderMeta.world.add(this.normalVisionSector);
+                    this.visionSector = this.normalVisionSector;
+                }
+            }
+    
+            // update vision sector position and rotation
+            if (this.visionSector) {
+                this.visionSector.rotation.z = -this.heading_angle;
+                this.visionSector.position.copy(this.pos);
+                this.visionSector.position.y = this.pos.y + 5;
+            }
+        }
     }
     
     render(renderMeta) {
@@ -202,14 +251,83 @@ export class Pedestrian extends Agent {
         pedestrian.castShadow = true;
         pedestrian.receiveShadow = true;
 
+        if (renderMeta.showSector) {
+            // remove old vision sectors if they exist
+            if (this.normalVisionSector) {
+                renderMeta.world.remove(this.normalVisionSector);
+                this.normalVisionSector = null;
+            }
+            if (this.distractedVisionSector) {
+                renderMeta.world.remove(this.distractedVisionSector);
+                this.distractedVisionSector = null;
+            }
+    
+            // helper to create a vision sector mesh
+            function createVisionSector(query_radius, fov, color, heading_angle, pos) {
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0);
+                const segments = 32;
+                for (let i = 0; i <= segments; i++) {
+                    const theta = -fov / 2 + (fov * i) / segments;
+                    shape.lineTo(query_radius * Math.cos(theta), query_radius * Math.sin(theta));
+                }
+                shape.lineTo(0, 0); // close the shape
+    
+                const geometry = new THREE.ShapeGeometry(shape);
+                const material = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide,
+                });
+    
+                const sector = new THREE.Mesh(geometry, material);
+                sector.rotation.x = -Math.PI / 2;
+                sector.rotation.z = -heading_angle;
+                sector.position.set(pos.x, pos.y + 5, pos.z);
+                return sector;
+            }
+    
+            // create both sectors
+            const normalQueryRadius = renderMeta.tileProps.width / 3 * 5;
+            const normalFov = Math.PI / 2;
+            const distractedQueryRadius = renderMeta.tileProps.width;
+            const distractedFov = Math.PI / 4;
+    
+            this.normalVisionSector = createVisionSector(
+                normalQueryRadius,
+                normalFov,
+                0x00FF00,
+                this.heading_angle,
+                this.pos
+            );
+            this.distractedVisionSector = createVisionSector(
+                distractedQueryRadius,
+                distractedFov,
+                0xFF0000,
+                this.heading_angle,
+                this.pos
+            );
+    
+            // add only the active sector to the world and set this.visionSector
+            if (this.distracted) {
+                renderMeta.world.add(this.distractedVisionSector);
+                this.visionSector = this.distractedVisionSector;
+            } else {
+                renderMeta.world.add(this.normalVisionSector);
+                this.visionSector = this.normalVisionSector;
+            }
+        }
+
+
         renderMeta.world.add(pedestrian);
         this.mesh = pedestrian;
     }
 }
 
 export class Driver extends Agent {
-    constructor(id, startPos, goal, pos) {
-        super(id, startPos, goal, pos);
+    constructor(id, startPos, goal, pos, risk) {
+        super(id, startPos, goal, pos, risk);
         this.type = "driver";
         this.width = DRIVER_WIDTH;
         this.length = DRIVER_LENGTH + FRONT_OVERHANG + REAR_OVERHANG;
@@ -268,7 +386,12 @@ export class Driver extends Agent {
         const steer_action = clip(action.steer, turn_left, turn_right);
 
         // map action values to REAL values
-        this.a = accel_action > 0 ? accel_action * ACCEL : accel_action * BRAKE;
+        if (this.is_speeder) {
+            this.a = accel_action > 0 ? accel_action * SPEEDER_ACCEL : accel_action * SPEEDER_BRAKE;
+        } else {
+            this.a = accel_action > 0 ? accel_action * ACCEL : accel_action * BRAKE;
+        }
+
 
         // update velocity
         this.v += this.a * dt;
@@ -277,7 +400,7 @@ export class Driver extends Agent {
         // steering
         this.omega = steer_action * OMEGA;
         this.steering_angle += this.omega * dt;
-        this.steering_angle = clip(this.steering_angle, -Math.PI / 4, Math.PI / 4); //could be changable constants?
+        this.steering_angle = clip(this.steering_angle, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE); //could be changable constants?
 
         // heading angle -- bicycle model
         if (Math.abs(this.v) > 0.01) {
@@ -340,8 +463,8 @@ export class Driver extends Agent {
 }
 
 export class MMV extends Agent {
-    constructor(id, startPos, goal, pos, isDismounted) {
-        super(id, startPos, goal, pos);
+    constructor(id, startPos, goal, pos, isDismounted, risk) {
+        super(id, startPos, goal, pos, risk);
         this.type = "mmv";
         this.width = MMV_WIDTH;
         this.length = MMV_LENGTH + MMV_FRONT_OVERHANG + MMV_REAR_OVERHANG;
@@ -395,7 +518,12 @@ export class MMV extends Agent {
         if (this.goal.type === 'road' && this.startTile.type === 'road') {
             this.heading_angle = this.getHeadingAngle();
         } else {
-            this.heading_angle = Math.atan2(this.goal.pos.z - this.pos.z, this.goal.pos.x - this.pos.x);
+            if (this.curr_path && this.curr_path[1]) {
+                let targetPos = this.curr_path[1].getCenterPos();
+                this.heading_angle = Math.atan2(targetPos.z - this.pos.z, targetPos.x - this.pos.x);
+            } else {
+                this.heading_angle = Math.atan2(this.goal.pos.z - this.pos.z, this.goal.pos.x - this.pos.x);
+            }
         }
 
         this.base = MMV_LENGTH;
@@ -410,7 +538,7 @@ export class MMV extends Agent {
     }
 
     // same as driver
-    step_mount(dt, action, renderMeta = null) {
+    step_mount(dt, action) {
         // actions
         const turn_left = -1, turn_right = 1;
         const brake = -1, accel = 1;
@@ -420,7 +548,11 @@ export class MMV extends Agent {
         const steer_action = clip(action.steer, turn_left, turn_right);
 
         // map action values to REAL values
-        this.a = accel_action > 0 ? accel_action * MMV_ACCEL : accel_action * MMV_BRAKE;
+        if (this.is_speeder) {
+            this.a = accel_action > 0? accel_action * MMV_SPEEDER_ACCEL : accel_action * MMV_SPEEDER_BRAKE;
+        } else {
+            this.a = accel_action > 0? accel_action * MMV_ACCEL : accel_action * MMV_BRAKE;
+        }
 
         // update velocity
         this.v += this.a * dt;
@@ -429,7 +561,7 @@ export class MMV extends Agent {
         // steering
         this.omega = steer_action * MMV_OMEGA;
         this.steering_angle += this.omega * dt;
-        this.steering_angle = clip(this.steering_angle, -Math.PI / 5, Math.PI / 5);
+        this.steering_angle = clip(this.steering_angle, -MMV_MAX_STEERING_ANGLE, MMV_MAX_STEERING_ANGLE);
 
         // heading angle -- bicycle model
         if (Math.abs(this.v) > 0.01) {
@@ -448,13 +580,13 @@ export class MMV extends Agent {
         this.pos.z = new_pos.z;
     }
 
-    step_dismount(dt, action, renderMeta = null) {
+    step_dismount(dt, action, renderMeta) {
         // action tells us next step or target velocity 
-        let vx = action.vx * WALKING_SPEED;
-        let vz = action.vz * WALKING_SPEED;
-        const dir = Math.atan2(vz, vx); // for heading angle
-
+        let vx = action.vx * MMV_WALKING_SPEED;
+        let vz = action.vz * MMV_WALKING_SPEED;
+        
         // update heading angle
+        const dir = Math.atan2(vz, vx); // for heading angle
         let angle_diff = dir - this.heading_angle;
         angle_diff = normAngle(angle_diff);
         const turnable = Math.PI * dt;
@@ -468,30 +600,30 @@ export class MMV extends Agent {
         const desired_velocity = new Vector2(vx, vz);
         const velocity = this.sfm_velocity;
         let selfDrivenForce = new Vector2(0,0); 
-        selfDrivenForce = desired_velocity.sub(velocity).divideScalar(TAU);
+        selfDrivenForce = desired_velocity.clone().sub(velocity).normalize().multiplyScalar(TAU);
         total_force.add(selfDrivenForce);
 
         // interaction force for sfm
-        // if (renderMeta.agents) {
-        //     for (let other of renderMeta.agents) {
-        //         if (other.id != this.id && other.mesh) {
-        //             if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
-        //                 const dist = distance(this.pos, other.pos);
-        //                 const rel_dir = this.pos.clone().sub(other.pos).normalize();
-        //                 const radii_sum = this.radius + other.radius;
-        //                 if (dist < 20) {
-        //                     const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-        //                     total_force.add(new Vector2(interactionForce.x, interactionForce.z));
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        if (renderMeta.agents) {
+            for (let other of renderMeta.agents) {
+                if (other.id != this.id && other.mesh) {
+                    if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted)) {
+                        const dist = distance(this.pos, other.pos);
+                        const rel_dir = this.pos.clone().sub(other.pos).normalize();
+                        const radii_sum = this.radius + other.radius;
+                        if (dist < 10) {
+                            const interactionForce = rel_dir.multiplyScalar(MMV_A * Math.exp((radii_sum - dist) / MMV_B));
+                            total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+                        }
+                    }
+                }
+            }
+        }
 
         this.sfm_velocity.add(total_force.multiplyScalar(dt));
         if (this.sfm_velocity.length() > WALKING_SPEED) this.sfm_velocity.normalize().multiplyScalar(WALKING_SPEED);
 
-        // pos update
+        // pos update, keeping next pos for when we do collision detection later
         const nextPos = new Vector3(
             this.pos.x + this.sfm_velocity.x * dt,
             this.pos.y,
@@ -519,7 +651,7 @@ export class MMV extends Agent {
         // actions: [dismount] = [0, 1], [turn_left,turn_right] = [-1, 1], [brake, accel] = [-1, 1], [vx,vz]
         this.isDismounted = action.dismount; 
         if (this.isDismounted === 1) this.step_dismount(dt, action, renderMeta);
-        else this.step_mount(dt, action, renderMeta);
+        else this.step_mount(dt, action);
 
         const reachedGoal = this.reachedGoal();
         if (renderMeta) {
@@ -535,6 +667,8 @@ export class MMV extends Agent {
     }
 
     updateMesh(renderMeta) {
+        let color = this.isDismounted ? MAGENTA : ORANGE;
+        this.mesh.material.color.set(color);
         this.mesh.position.copy(this.pos);
         this.mesh.position.y = renderMeta.pfProps.depth / 2 + renderMeta.tileProps.height / 2 + MMV_HEIGHT / 2; 
         this.mesh.rotation.y = -this.heading_angle;
@@ -546,8 +680,9 @@ export class MMV extends Agent {
             MMV_HEIGHT,
             MMV_WIDTH
         );
-        const PURPLE = "#800080";
-        const mmvMat = new THREE.MeshStandardMaterial({ color: PURPLE });
+        
+        let color = this.isDismounted ? MAGENTA : ORANGE;
+        const mmvMat = new THREE.MeshStandardMaterial({ color: color });
         const mmv = new THREE.Mesh(mmvGeo, mmvMat);
         mmv.castShadow = true;
         mmv.receiveShadow = true;
