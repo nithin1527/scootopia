@@ -456,6 +456,15 @@ function updateSingleAgentPosition(agent, dt, renderMeta) {
 	}
 }
 
+// later - change this to normal distribution based on data
+function generateRiskForAgent(risk) {
+	const max = risk + 10;
+	const min = risk - 10;
+	const range = max - min;
+	const randVal = Math.floor(Math.random() * range + min)
+	return Math.max(0, Math.min(randVal, 100));
+}
+
 export async function init3DEnvironment() {
 
 	// environment setup
@@ -485,6 +494,8 @@ export async function init3DEnvironment() {
 	const validRoadTiles = roadTiles.filter(tile => !tile.fullTileType.includes('X'));
 	const sidewalkTiles = getAllTilesOfType("sidewalk", tileDict);
 	const density = parseInt(document.getElementById('densityRangeInput').value, 10);
+	const risk = parseInt(document.getElementById('riskRange').value, 10);
+	console.log("density:", density, "risk:", risk);
 	
 	const NUM_CARS_LIMITER = 0.3;
 	const NUM_PEDESTRIANS_LIMITER = 0.7;
@@ -497,7 +508,6 @@ export async function init3DEnvironment() {
 	const numDrivers = Math.floor( (density / 10) * maxDrivers );
 	const numPedestrians = Math.floor( (density / 10) * maxPedestrians );
 	const numMMVs = Math.floor( (density / 10) * maxMMVs );
-
 	
 	let pedestrianAgents = [];
 	let driverAgents = [];
@@ -557,14 +567,17 @@ export async function init3DEnvironment() {
 	}
 
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	spawnAllAgents(driverAgents, newRenderMeta);	
+// 	let debugAgent = spawnSingleAgent("pedestrian", agents, newRenderMeta, true);
+// 	console.log(debugAgent);
+
+	spawnAllAgents(agents, newRenderMeta);
 
 	const dt = 0.2;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(driverAgents, dt, newRenderMeta);
+		updatePosition(agents, dt, newRenderMeta);
 		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
@@ -579,5 +592,9 @@ export async function init3DEnvironment() {
 }
 
 document.getElementById("densityRangeInput").addEventListener("input", async function () {
+	await init3DEnvironment();
+});
+
+document.getElementById("riskRange").addEventListener("input", async function () {
 	await init3DEnvironment();
 });
