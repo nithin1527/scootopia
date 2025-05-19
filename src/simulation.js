@@ -477,7 +477,8 @@ function generateRiskForAgent(risk) {
 	const max = risk + 10;
 	const min = risk - 10;
 	const range = max - min;
-	return Math.floor(Math.random() * range + min);
+	const randVal = Math.floor(Math.random() * range + min)
+	return Math.max(0, Math.min(randVal, 100));
 }
 
 export async function init3DEnvironment() {
@@ -509,7 +510,8 @@ export async function init3DEnvironment() {
 	const validRoadTiles = roadTiles.filter(tile => !tile.fullTileType.includes('X'));
 	const sidewalkTiles = getAllTilesOfType("sidewalk", gridObj.grid, tileDict);
 	const density = parseInt(document.getElementById('densityRangeInput').value, 10);
-	const risk = parseInt(document.getElementById('riskRangeValue').value, 50);
+	const risk = parseInt(document.getElementById('riskRange').value, 10);
+	console.log("density:", density, "risk:", risk);
 	
 	const NUM_CARS_LIMITER = 0.3;
 	const NUM_PEDESTRIANS_LIMITER = 0.7;
@@ -565,18 +567,18 @@ export async function init3DEnvironment() {
 
 	// just give type name "pedestrian", "driver", "mmv"
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	// let debugAgent = spawnSingleAgent("pedestrian", agents, newRenderMeta, true);
-	// console.log(debugAgent);
+	let debugAgent = spawnSingleAgent("pedestrian", agents, newRenderMeta, true);
+	console.log(debugAgent);
 
-	spawnAllAgents(agents, newRenderMeta);
+	// spawnAllAgents(agents, newRenderMeta);
 
 	const dt = 0.05;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(agents, dt, newRenderMeta);
-		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		// updatePosition(agents, dt, newRenderMeta);
+		updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
 	window.addEventListener("keydown", (event) => {if (event.code == "Space") isAgentMoving = !isAgentMoving});

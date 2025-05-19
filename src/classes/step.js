@@ -1,11 +1,11 @@
 import {Vector3} from "three";
-import { getCurrentTile , clip, getRandFromRange, normAngle} from "./util.js";
+import { getCurrentTile , clip, getRandFromRange, normAngle, distance} from "./util.js";
 import { MAX_VELOCITY } from "../constants.js";
 
 function refocusAgent(agent, renderMeta) {
-	if (agent.isDistracted) {
+	if (agent.distracted) {
 		// intrinsic refocus
-		let intrinsic = Math.random() * 100 < agent.getRisk();
+		let intrinsic = Math.random() * 100 < agent.risk;
 
 		// extrinsic refocus based on relative velocity
 		const query_radius = agent.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
@@ -36,7 +36,7 @@ function refocusAgent(agent, renderMeta) {
 			console.log("Agent " + agent.id + " refocused.");
 		}
 
-		agent.setDistracted(distracted);
+		agent.distracted = distracted;
 	}
 }
 
@@ -46,6 +46,26 @@ function getGoalDir(agent) {
 
 function getPedestrianTargetDir(agent) {
 	let targetPos = agent.curr_path[agent.curr_path_idx].getCenterPos();
+	console.log("Pedestrian target pos: ", targetPos);
+	if (agent.distracted) {
+		// shift the target position to a random point in an ellipse around the target
+		const dist = distance(agent.pos, targetPos);
+		// const semiMinor = 0.1 * dist;
+		// const semiMajor = 0.2 * dist;
+		const semiMinor = 5;
+		const semiMajor = 5;
+		const theta = agent.heading_angle;
+		const randAngle = Math.random() * 2 * Math.PI;
+		const r = Math.sqrt(Math.random());
+		const x = r * semiMajor * Math.cos(randAngle);
+		const z = r * semiMinor * Math.sin(randAngle);
+		const rotatedX = x * Math.cos(theta) - z * Math.sin(theta);
+		const rotatedZ = x * Math.sin(theta) + z * Math.cos(theta);
+		console.log("dist: ", dist, " semiMinor: ", semiMinor, " semiMajor: ", semiMajor);
+		targetPos.x += rotatedX;
+		targetPos.z += rotatedZ;
+		console.log("Pedestrian target pos (distracted): ", targetPos);
+	}
 	return new Vector3(targetPos.x - agent.pos.x, 0, targetPos.z - agent.pos.z);
 }
 
@@ -59,7 +79,7 @@ function getPedestrianAction(agent) {
 }
 
 export function stepPedestrian(agent, dt, renderMeta) {
-	refocusAgent(agent, renderMeta);
+	// refocusAgent(agent, renderMeta);
 	if (agent.mesh && !agent.reachedGoal()) {
 		agent.step(dt, getPedestrianAction(agent), renderMeta);
 	} else {

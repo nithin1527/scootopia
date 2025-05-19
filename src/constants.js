@@ -17,8 +17,8 @@ export const PEDESTRIAN_HEIGHT = 50;
 export const WALKING_SPEED = 5;
 // sfm constants
 export const TAU = 0.5; 
-export const A = 10.0; 
-export const B = 10.0; 
+export const A = 500.0; 
+export const B = 20.0; 
 
 // driver constants
 export const DRIVER_GOAL_RADIUS = 20;

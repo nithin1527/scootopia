@@ -25,7 +25,9 @@ class Agent {
         this.curr_path_idx = -1;
 
         this.risk = risk;
-        this.distracted = Math.random() * 100 < this.risk;
+        const rand = Math.random() * 100;
+        console.log("Agent " + this.id + " risk: ", this.risk, " rand: ", rand);
+        this.distracted = rand < this.risk;
     }
 
     // i think this is how you do you do abstract methods in js...
@@ -112,29 +114,17 @@ class Agent {
         const angleToOther = forward.angleTo(rel_dir);
         return dist < query_radius && angleToOther < fov / 2;
     }
-
-    setDistracted(distracted) {
-        this.distracted = distracted;
-    }
-    isDistracted() {
-        return this.distracted;
-    }
-
-    getRisk() {
-        return this.risk;
-    }
 }
 
 export class Pedestrian extends Agent {
-    constructor(id, startPos, goal, pos) {
-        super(id, startPos, goal, pos);
+    constructor(id, startPos, goal, pos, risk) {
+        super(id, startPos, goal, pos, risk);
         this.type = "pedestrian";
         this.width = 16;
         this.length = 16;
         this.radius = 8;
 
         this.sfm_velocity = new Vector2(0, 0);
-        this.distracted = false;
     }
 
     reachedGoal() { return distance(this.pos, this.goal.pos) < PEDESTRIAN_GOAL_RADIUS; }
@@ -183,8 +173,11 @@ export class Pedestrian extends Agent {
                         console.log("Agent " + other.id + " in FOV of agent " + this.id, "with distance: " + dist);
 
                         // other is within fov and query radius
-                        const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-                        total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+                        if (dist < 20) {
+                            const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
+                            console.log("Agent " + this.id + " interaction force: ", interactionForce);
+                            total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+                        }
 
                         if (this.collides(other)) {
                             console.log("Collision detected between agent " + this.id + " and agent " + other.id);
@@ -195,7 +188,7 @@ export class Pedestrian extends Agent {
         }
 
         this.sfm_velocity.add(total_force.multiplyScalar(dt));
-        console.log("Agent " + this.id + " sfm_velocity: ", this.sfm_velocity);
+        // console.log("Agent " + this.id + "interaction force: ", total_force.sub(selfDrivenForce), " sfm_velocity: ", this.sfm_velocity);
         if (this.sfm_velocity.length() > WALKING_SPEED) this.sfm_velocity.normalize().multiplyScalar(WALKING_SPEED);
 
         // pos update
@@ -279,8 +272,8 @@ export class Pedestrian extends Agent {
 }
 
 export class Driver extends Agent {
-    constructor(id, startPos, goal, pos) {
-        super(id, startPos, goal, pos);
+    constructor(id, startPos, goal, pos, risk) {
+        super(id, startPos, goal, pos, risk);
         this.type = "driver";
         this.width = DRIVER_WIDTH;
         this.length = DRIVER_LENGTH + FRONT_OVERHANG + REAR_OVERHANG;
@@ -411,8 +404,8 @@ export class Driver extends Agent {
 }
 
 export class MMV extends Agent {
-    constructor(id, startPos, goal, pos, isDismounted) {
-        super(id, startPos, goal, pos);
+    constructor(id, startPos, goal, pos, isDismounted, risk) {
+        super(id, startPos, goal, pos, risk);
         this.type = "mmv";
         this.width = MMV_WIDTH;
         this.length = MMV_LENGTH + MMV_FRONT_OVERHANG + MMV_REAR_OVERHANG;
