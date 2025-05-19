@@ -26,6 +26,7 @@ class Agent {
     }
 
     // i think this is how you do you do abstract methods in js...
+    // good to have for RL doc later
     initDynamics() {
         throw new Error("Agent Class must implement initDynamics()");
     }
@@ -42,7 +43,7 @@ class Agent {
         throw new Error("Agent Class must implement updateMesh()");
     }
 
-    // refer later - might not need it
+    // refer later if euler is causing issues - might not need it?
     update_rk4(dt) {
         const k1_v = this.v;
         const k1_a = this.a;
@@ -122,9 +123,9 @@ export class Pedestrian extends Agent {
         // action tells us next step or target velocity 
         let vx = action.vx * WALKING_SPEED;
         let vz = action.vz * WALKING_SPEED;
-        const dir = Math.atan2(vz, vx); // for heading angle
-
+        
         // update heading angle
+        const dir = Math.atan2(vz, vx); // for heading angle
         let angle_diff = dir - this.heading_angle;
         angle_diff = normAngle(angle_diff);
         const turnable = Math.PI * dt;
@@ -138,30 +139,30 @@ export class Pedestrian extends Agent {
         const desired_velocity = new Vector2(vx, vz);
         const velocity = this.sfm_velocity;
         let selfDrivenForce = new Vector2(0,0); 
-        selfDrivenForce = desired_velocity.sub(velocity).divideScalar(TAU);
+        selfDrivenForce = desired_velocity.clone().sub(velocity).normalize().multiplyScalar(TAU);
         total_force.add(selfDrivenForce);
 
         // // interaction force for sfm
-        // if (renderMeta.agents) {
-        //     for (let other of renderMeta.agents) {
-        //         if (other.id != this.id && other.mesh) {
-        //             if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
-        //                 const dist = distance(this.pos, other.pos);
-        //                 const rel_dir = this.pos.clone().sub(other.pos).normalize();
-        //                 const radii_sum = this.radius + other.radius;
-        //                 if (dist < 20) {
-        //                     const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-        //                     total_force.add(new Vector2(interactionForce.x, interactionForce.z));
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        if (renderMeta.agents) {
+            for (let other of renderMeta.agents) {
+                if (other.id != this.id && other.mesh) {
+                    if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted)) {
+                        const dist = distance(this.pos, other.pos);
+                        const rel_dir = this.pos.clone().sub(other.pos).normalize();
+                        const radii_sum = this.radius + other.radius;
+                        if (dist < 20) {
+                            const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
+                            total_force.add(new Vector2(interactionForce.x, interactionForce.z));
+                        }
+                    }
+                }
+            }
+        }
 
         this.sfm_velocity.add(total_force.multiplyScalar(dt));
         if (this.sfm_velocity.length() > WALKING_SPEED) this.sfm_velocity.normalize().multiplyScalar(WALKING_SPEED);
 
-        // pos update
+        // pos update, keeping next pos for when we do collision detection later
         const nextPos = new Vector3(
             this.pos.x + this.sfm_velocity.x * dt,
             this.pos.y,
@@ -262,7 +263,7 @@ export class Driver extends Agent {
         const turn_left = -1, turn_right = 1;
         const brake = -1, accel = 1;
 
-        // clip action values
+        // clip action values just for safety 
         const accel_action = clip(action.accel, brake, accel);
         const steer_action = clip(action.steer, turn_left, turn_right);
 
@@ -276,7 +277,7 @@ export class Driver extends Agent {
         // steering
         this.omega = steer_action * OMEGA;
         this.steering_angle += this.omega * dt;
-        this.steering_angle = clip(this.steering_angle, -Math.PI / 4, Math.PI / 4);
+        this.steering_angle = clip(this.steering_angle, -Math.PI / 4, Math.PI / 4); //could be changable constants?
 
         // heading angle -- bicycle model
         if (Math.abs(this.v) > 0.01) {

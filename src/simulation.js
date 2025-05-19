@@ -322,7 +322,7 @@ function getRandomCorrectRoadGoal(agent, goals) {
 	return candidates.length > 0 ? getRandomObjFromList(candidates) : false;
 }
 
-function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta, minSep = 800) {
+function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta) {
 	let vehicleTiles = tiles.slice();
 
 	for (let agent of agents) {
@@ -331,6 +331,8 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 		while (!placed && attempts++ < 100) {
 
 			const tile = agent.type === 'driver' ? getRandomObjFromList(vehicleTiles) : getRandomObjFromList(tiles);
+
+			// at most one driver per road tile so center pos needed instead of random
 			const candidatePos = agent.type === "driver" ? tile.getCenterPos() : tile.getRandomPosIn();
 
 			// condition 1: check minimum distance to goal so that agent is movable
@@ -341,7 +343,7 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 			if (
 				(agent.type !== 'driver') && worldAgents
 				.filter(a => a.startTile === agent.startTile)
-				.some(a => Math.hypot(candidatePos.x - a.pos.x, candidatePos.z - a.pos.z) < minSep)
+				.some(a => Math.hypot(candidatePos.x - a.pos.x, candidatePos.z - a.pos.z) < MIN_SEP_DIST)
 			) { continue }
 
 			// condition 3: at most 1 driver agent can occupy a tile
@@ -486,10 +488,6 @@ export async function init3DEnvironment() {
 	const sidewalkTiles = getAllTilesOfType("sidewalk", tileDict);
 	const density = parseInt(document.getElementById('densityRangeInput').value, 10);
 	
-	const NUM_CARS_LIMITER = 0.3;
-	const NUM_PEDESTRIANS_LIMITER = 0.5;
-	const NUM_MMV_LIMITER = 0.4;
-	
 	const maxDrivers = validRoadTiles.length * NUM_CARS_LIMITER;
 	const maxPedestrians = Math.floor(sidewalkTiles.length * NUM_PEDESTRIANS_LIMITER);
 	const maxMMVs = Math.floor(sidewalkTiles.length * NUM_MMV_LIMITER);
@@ -557,14 +555,15 @@ export async function init3DEnvironment() {
 	}
 
 	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-	spawnAllAgents(agents, newRenderMeta);	
+	spawnAllAgents(pedestrianAgents, newRenderMeta, false);	
 
-	const dt = 0.1;   
+
+	const dt = 0.02;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(agents, dt, newRenderMeta);
+		updatePosition(pedestrianAgents, dt, newRenderMeta);
 		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
