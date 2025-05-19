@@ -22,7 +22,7 @@ export class Tile {
         this.isEdgeTile = isEdgeTile;
 
         let dir = null;
-        if (this.type === 'road' || 'road-cw') {
+        if (this.type === 'road' || this.type === 'road-cw') {
             const parts = this.fullTileType.split('-');
             dir = this.type === 'road-cw' ? parts[2] : parts[1];
         }

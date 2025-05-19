@@ -26,12 +26,12 @@ export const DRIVER_WIDTH = 40;
 export const DRIVER_LENGTH = 40; 
 export const DRIVER_HEIGHT = 10;
 export const FRONT_OVERHANG = 5;
-export const REAR_OVERHANG = 5;
+export const REAR_OVERHANG = 5
 
-export const ACCEL = 5.0; // m/s^2 -- acceleration
-export const BRAKE = 5.0; // m/s^2 -- deceleration
-export const MAX_VELOCITY = 15.0; // m/s
-export const OMEGA = Math.PI; // rad/s
+export const ACCEL = 2.0; // m/s^2 -- acceleration
+export const BRAKE = 2.0; // m/s^2 -- deceleration
+export const MAX_VELOCITY = 10.0; // m/s 
+export const OMEGA = Math.PI / 2; // rad/s 
 
 // mmv constants
 export const MMV_WIDTH = 10;

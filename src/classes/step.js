@@ -94,11 +94,10 @@ export function stepPedestrian(agent, dt, renderMeta) {
 }
 
 export function getAccel(agent, curr_tile) {
-	const MAV_VEL = 10.0;
-	if (curr_tile.type === 'road-cw' && agent.v >= MAV_VEL * 0.5) { // slow down on crosswalk
-		return -0.1;
-	} else if (agent.v < MAV_VEL) {
-		return 0.3
+	if (curr_tile && curr_tile.type === 'road-cw' && agent.v >= MAX_VELOCITY * 0.5) { // slow down on crosswalk
+		return -0.2;
+	} else if (agent.v < MAX_VELOCITY) { 
+		return 0.2 
 	} else {
 		return 0.0;
 	}
