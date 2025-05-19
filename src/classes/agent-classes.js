@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Vector3, Vector2 } from "three";
 import { normAngle, angle_between_vectors, distance, clip, getCurrentTile } from "./util.js";
+import { SHOW_SECTOR } from '../constants.js';
 
 class Agent {
     constructor(id = null, startPos = null, goal = null, pos = null, risk = null) {
@@ -161,7 +162,7 @@ export class Pedestrian extends Agent {
         if (renderMeta.agents) {
             for (let other of renderMeta.agents) {
                 if (other.id != this.id && other.mesh) {
-                    if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted)) {
+                    if (other.type === 'pedestrian' || (other.type === 'mmv')) {
                         const dist = distance(this.pos, other.pos);
                         const rel_dir = this.pos.clone().sub(other.pos).normalize();
                         const radii_sum = this.radius + other.radius;
@@ -209,7 +210,7 @@ export class Pedestrian extends Agent {
         this.mesh.position.y = renderMeta.pfProps.depth / 2 + renderMeta.tileProps.height / 2 + PEDESTRIAN_HEIGHT / 2;
         this.mesh.rotation.y = -this.heading_angle;
 
-        if (renderMeta.showSector) {
+        if (SHOW_SECTOR) {
             // vision sector updates
             // remove both sectors from world if they exist
             if (this.normalVisionSector) {
@@ -251,7 +252,7 @@ export class Pedestrian extends Agent {
         pedestrian.castShadow = true;
         pedestrian.receiveShadow = true;
 
-        if (renderMeta.showSector) {
+        if (SHOW_SECTOR) {
             // remove old vision sectors if they exist
             if (this.normalVisionSector) {
                 renderMeta.world.remove(this.normalVisionSector);
@@ -609,7 +610,7 @@ export class MMV extends Agent {
         if (renderMeta.agents) {
             for (let other of renderMeta.agents) {
                 if (other.id != this.id && other.mesh) {
-                    if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted)) {
+                    if (other.type === 'pedestrian' || (other.type === 'mmv')) {
                         const dist = distance(this.pos, other.pos);
                         const rel_dir = this.pos.clone().sub(other.pos).normalize();
                         const radii_sum = this.radius + other.radius;

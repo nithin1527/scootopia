@@ -10,10 +10,12 @@ export const MAGENTA = "#FF00FF";
 export const PURPLE = "#800080";
 export const ORANGE = "#FFA500";
 
-// show constants
-export const SHOW_PEDESTRIAN = false;
-export const SHOW_MMV = false;
-export const SHOW_DRIVER = false;
+// show constants -- control these!!
+export const SHOW_PEDESTRIAN = true;
+export const SHOW_MMV = true;
+export const SHOW_DRIVER = true;
+export const SHOW_SECTOR = false;
+export const SHOW_GOALS = false;
 
 // limiter constants for init spawning distribution of agents
 // constants w1,w2,w3

@@ -8,7 +8,6 @@ import { getTileFromGridLoc } from "./classes/util.js";
 import { Goal, Pedestrian, Driver, MMV } from "./classes/agent-classes.js";
 import { getPath } from "./classes/path-finding.js";
 import { stepPedestrian, stepMMV, stepDriver } from "./classes/step.js";
-
 import * as constants from "./constants.js";
 Object.assign(window, constants);
 
@@ -570,16 +569,20 @@ export async function init3DEnvironment() {
 		}
 	})
 
-	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:false, showGoal:false};
-	spawnAllAgents(driverAgents, newRenderMeta);	
+	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:SHOW_SECTOR, showGoal:SHOW_GOALS};
+	agents = [];
+	if (SHOW_PEDESTRIAN) agents = agents.concat(pedestrianAgents);
+	if (SHOW_DRIVER) agents = agents.concat(driverAgents);
+	if (SHOW_MMV) agents = agents.concat(mmvAgents);
+	newRenderMeta.agents = agents;
+	spawnAllAgents(agents, newRenderMeta);
 
-
-	const dt = 0.05;   
+	const dt = 0.03;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(driverAgents, dt, newRenderMeta);
+		updatePosition(agents, dt, newRenderMeta);
 		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
