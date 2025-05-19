@@ -25,9 +25,7 @@ class Agent {
         this.curr_path_idx = -1;
 
         this.risk = risk;
-        const rand = Math.random() * 100;
-        console.log("Agent " + this.id + " risk: ", this.risk, " rand: ", rand);
-        this.distracted = rand < this.risk;
+        this.distracted = Math.random() * 100 < this.risk;
     }
 
     // i think this is how you do you do abstract methods in js...
@@ -170,12 +168,10 @@ export class Pedestrian extends Agent {
 
                         // if other is outside of fov and query radius, skip
                         if (!this.withinFOV(other, query_radius, fov)) continue;
-                        console.log("Agent " + other.id + " in FOV of agent " + this.id, "with distance: " + dist);
 
                         // other is within fov and query radius
                         if (dist < 20) {
                             const interactionForce = rel_dir.multiplyScalar(A * Math.exp((radii_sum - dist) / B));
-                            console.log("Agent " + this.id + " interaction force: ", interactionForce);
                             total_force.add(new Vector2(interactionForce.x, interactionForce.z));
                         }
 
@@ -219,9 +215,34 @@ export class Pedestrian extends Agent {
         this.mesh.position.copy(this.pos);
         this.mesh.position.y = renderMeta.pfProps.depth / 2 + renderMeta.tileProps.height / 2 + PEDESTRIAN_HEIGHT / 2;
         this.mesh.rotation.y = this.heading_angle;
-        this.visionSector.rotation.z = -this.heading_angle;
-        this.visionSector.position.copy(this.pos);
-        this.visionSector.position.y = this.pos.y + 5;
+
+        // Remove both sectors from world if they exist
+        if (this.normalVisionSector) {
+            renderMeta.world.remove(this.normalVisionSector);
+        }
+        if (this.distractedVisionSector) {
+            renderMeta.world.remove(this.distractedVisionSector);
+        }
+
+        // Add the correct sector based on distracted state
+        if (this.distracted) {
+            if (this.distractedVisionSector) {
+                renderMeta.world.add(this.distractedVisionSector);
+                this.visionSector = this.distractedVisionSector;
+            }
+        } else {
+            if (this.normalVisionSector) {
+                renderMeta.world.add(this.normalVisionSector);
+                this.visionSector = this.normalVisionSector;
+            }
+        }
+
+        // Update vision sector position and rotation
+        if (this.visionSector) {
+            this.visionSector.rotation.z = -this.heading_angle;
+            this.visionSector.position.copy(this.pos);
+            this.visionSector.position.y = this.pos.y + 5;
+        }
     }
     
     render(renderMeta) {
@@ -237,37 +258,71 @@ export class Pedestrian extends Agent {
         renderMeta.world.add(pedestrian);
         this.mesh = pedestrian;
 
-        // attention sector for debugging
-        const query_radius = this.distracted ? renderMeta.tileProps.width : renderMeta.tileProps.width / 3 * 5;
-        const fov = this.distracted ? Math.PI / 4 : Math.PI / 2;
-
-        const shape = new THREE.Shape();
-        shape.moveTo(0, 0);
-        const segments = 32;
-        for (let i = 0; i <= segments; i++) {
-            const theta = -fov / 2 + (fov * i) / segments;
-            shape.lineTo(query_radius * Math.cos(theta), query_radius * Math.sin(theta));
+        // Remove old vision sectors if they exist
+        if (this.normalVisionSector) {
+            renderMeta.world.remove(this.normalVisionSector);
+            this.normalVisionSector = null;
         }
-        shape.lineTo(0, 0); // close the shape
+        if (this.distractedVisionSector) {
+            renderMeta.world.remove(this.distractedVisionSector);
+            this.distractedVisionSector = null;
+        }
 
-        const geometry = new THREE.ShapeGeometry(shape);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0xFF0000,
-            transparent: true,
-            opacity: 0.3,
-            side: THREE.DoubleSide,
-        });
+        // Helper to create a vision sector mesh
+        function createVisionSector(query_radius, fov, color, heading_angle, pos) {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0);
+            const segments = 32;
+            for (let i = 0; i <= segments; i++) {
+                const theta = -fov / 2 + (fov * i) / segments;
+                shape.lineTo(query_radius * Math.cos(theta), query_radius * Math.sin(theta));
+            }
+            shape.lineTo(0, 0); // close the shape
 
-        const sector = new THREE.Mesh(geometry, material);
+            const geometry = new THREE.ShapeGeometry(shape);
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide,
+            });
 
-        // Apply heading angle here — exactly once
-        sector.rotation.x = -Math.PI / 2;
-        sector.rotation.z = -this.heading_angle; // this is the ONLY rotation now
-        sector.position.set(this.pos.x, this.pos.y + 5, this.pos.z);
+            const sector = new THREE.Mesh(geometry, material);
+            sector.rotation.x = -Math.PI / 2;
+            sector.rotation.z = -heading_angle;
+            sector.position.set(pos.x, pos.y + 5, pos.z);
+            return sector;
+        }
 
-        renderMeta.world.add(sector);
-        this.visionSector = sector;
+        // Create both sectors
+        const normalQueryRadius = renderMeta.tileProps.width / 3 * 5;
+        const normalFov = Math.PI / 2;
+        const distractedQueryRadius = renderMeta.tileProps.width;
+        const distractedFov = Math.PI / 4;
 
+        this.normalVisionSector = createVisionSector(
+            normalQueryRadius,
+            normalFov,
+            0x00FF00,
+            this.heading_angle,
+            this.pos
+        );
+        this.distractedVisionSector = createVisionSector(
+            distractedQueryRadius,
+            distractedFov,
+            0xFF0000,
+            this.heading_angle,
+            this.pos
+        );
+
+        // Add only the active sector to the world and set this.visionSector
+        if (this.distracted) {
+            renderMeta.world.add(this.distractedVisionSector);
+            this.visionSector = this.distractedVisionSector;
+        } else {
+            renderMeta.world.add(this.normalVisionSector);
+            this.visionSector = this.normalVisionSector;
+        }
     }
 }
 

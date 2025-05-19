@@ -570,15 +570,15 @@ export async function init3DEnvironment() {
 	let debugAgent = spawnSingleAgent("pedestrian", agents, newRenderMeta, true);
 	console.log(debugAgent);
 
-	// spawnAllAgents(agents, newRenderMeta);
+	spawnAllAgents(agents, newRenderMeta);
 
 	const dt = 0.05;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
 		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		// updatePosition(agents, dt, newRenderMeta);
-		updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		updatePosition(agents, dt, newRenderMeta);
+		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
 	}
 
 	window.addEventListener("keydown", (event) => {if (event.code == "Space") isAgentMoving = !isAgentMoving});
