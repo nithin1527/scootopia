@@ -1,26 +1,15 @@
 # Scootopia
-Scootopia is a **S**imulation framework for modeling **C**ampus environments with **O**bservation-based RL for the purposes of examining **O**n campus, risky **T**raffic behaviors involving 
-**O**verlapping interactions between **P**edestrians, MMVs, and vehicles to **I**nform real-world safety **A**pplications.
 
-## Instructions
-1. Run the Python API. 
-<!-- After running, see documentation [http://127.0.0.1:8000/docs](here). -->
-```
-# cd to backend folder
-cd src/backend
+## Running the Simulator
+To run our simulator:
+1. Install Node.js
+2. Navigate the code folder titled `scootopia`
+3. `cd` into the `src` folder
+4. run `npm install` to install the required dependencies
+5. run the development server by running the following command: `npm run dev` or use the live server extension (https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
 
-# create a virtual environment and install dependencies
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+## Usage
+We provide to main hyperparameters as part of the UI for its intended purpose. However,
+if you would like to change additional hyperparameters, you can do so in the `src/constants.js` file.
 
-# run the API
-python -m uvicorn api_service:app --reload
-```
-2. Install the Live Server extension in VS Code and click `Go Live` in the bottom right corner.
-
-<!-- MISC
-cd src/backend
-uvicorn api_service:app --reload 
--- add windows later
--->
+To run the simulation, simply press the space bar.
