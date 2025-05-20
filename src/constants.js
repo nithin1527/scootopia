@@ -14,8 +14,10 @@ export const ORANGE = "#FFA500";
 export const SHOW_PEDESTRIAN = true;
 export const SHOW_MMV = true;
 export const SHOW_DRIVER = true;
-export const SHOW_SECTOR = false;
-export const SHOW_GOALS = false;
+export const SHOW_SECTOR = true;
+export const SHOW_GOALS = true;
+export const SHOW_SINGLE_AGENT = false;
+export const SINGLE_AGENT_TYPE = 'mmv';
 
 // limiter constants for init spawning distribution of agents
 // constants w1,w2,w3

@@ -574,16 +574,26 @@ export async function init3DEnvironment() {
 	if (SHOW_PEDESTRIAN) agents = agents.concat(pedestrianAgents);
 	if (SHOW_DRIVER) agents = agents.concat(driverAgents);
 	if (SHOW_MMV) agents = agents.concat(mmvAgents);
+	
 	newRenderMeta.agents = agents;
-	spawnAllAgents(agents, newRenderMeta);
+	let debugAgent = null;
+	if (SHOW_SINGLE_AGENT) {
+		newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:SHOW_SECTOR, showGoal:SHOW_GOALS};
+		debugAgent = spawnSingleAgent(SINGLE_AGENT_TYPE, agents, newRenderMeta, true);
+	} else {
+		spawnAllAgents(agents, newRenderMeta);
+	}
 
 	const dt = 0.03;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
-		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(agents, dt, newRenderMeta);
-		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:SHOW_SECTOR, showGoal:SHOW_GOALS};
+		if (SHOW_SINGLE_AGENT) {
+			updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		} else {
+			updatePosition(agents, dt, newRenderMeta);
+		}
 	}
 
 	window.addEventListener("keydown", (event) => {if (event.code == "Space") isAgentMoving = !isAgentMoving});
