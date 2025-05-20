@@ -8,7 +8,6 @@ import { getTileFromGridLoc } from "./classes/util.js";
 import { Goal, Pedestrian, Driver, MMV } from "./classes/agent-classes.js";
 import { getPath } from "./classes/path-finding.js";
 import { stepPedestrian, stepMMV, stepDriver } from "./classes/step.js";
-
 import * as constants from "./constants.js";
 Object.assign(window, constants);
 
@@ -322,7 +321,7 @@ function getRandomCorrectRoadGoal(agent, goals) {
 	return candidates.length > 0 ? getRandomObjFromList(candidates) : false;
 }
 
-function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta, minSep = 800) {
+function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta) {
 	let vehicleTiles = tiles.slice();
 
 	for (let agent of agents) {
@@ -331,6 +330,8 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 		while (!placed && attempts++ < 100) {
 
 			const tile = agent.type === 'driver' ? getRandomObjFromList(vehicleTiles) : getRandomObjFromList(tiles);
+
+			// at most one driver per road tile so center pos needed instead of random
 			const candidatePos = agent.type === "driver" ? tile.getCenterPos() : tile.getRandomPosIn();
 
 			// condition 1: check minimum distance to goal so that agent is movable
@@ -341,7 +342,7 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 			if (
 				(agent.type !== 'driver') && worldAgents
 				.filter(a => a.startTile === agent.startTile)
-				.some(a => Math.hypot(candidatePos.x - a.pos.x, candidatePos.z - a.pos.z) < minSep)
+				.some(a => Math.hypot(candidatePos.x - a.pos.x, candidatePos.z - a.pos.z) < MIN_SEP_DIST)
 			) { continue }
 
 			// condition 3: at most 1 driver agent can occupy a tile
@@ -352,13 +353,13 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 			agent.setPos(candidatePos);
 			agent.setStartTile(tile);
 			if (agent.type === 'mmv') {
-				agent.isDismounted = tile.type === 'sidewalk' ? false : false;
+				agent.isDismounted = tile.type === 'sidewalk' ? true : false;
 			}
 			agent.setStartPos(agent.pos);
 			agent.render(renderMeta);
 
 			// condition 4: driver agent should be contained completely within the start tile
-			if (agent.type === 'driver') {
+			if (agent.type === 'driver' || agent.type === 'mmv') {
 				const tileSizeHalf = renderMeta.tileProps.width / 2;
 				const tileCenter = tile.getCenterPos();
 				const minTileX = tileCenter.x - tileSizeHalf;
@@ -386,10 +387,6 @@ function assignStartPos(agents, worldAgents, tiles, minManhattanDist, renderMeta
 function spawnSingleAgent(type, agents, renderMeta, debug = false) {
 	let currAgents = agents.filter(a => a.type === type);
 	const agent = currAgents[0];
-	agent.initDynamics();
-	agent.render(renderMeta);
-	if (debug) agent.goal.render(renderMeta);
-	
 	const start_tile = agent.startTile;
 	const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
 
@@ -401,6 +398,9 @@ function spawnSingleAgent(type, agents, renderMeta, debug = false) {
 			agent.goal_tile = goal_tile;
 		}
 	}
+	agent.initDynamics();
+	agent.render(renderMeta);
+	if (debug) agent.goal.render(renderMeta);
 	return agent;
 }
 
@@ -408,9 +408,6 @@ function spawnAllAgents(agents, renderMeta) {
 	console.log(agents);
 	for (let agent of agents) {
 		if (agent) {
-			agent.initDynamics();
-			agent.goal.render(renderMeta);
-			agent.render(renderMeta);
 			const start_tile = agent.startTile;
 			const goal_tile = getTileFromGridLoc(agent.goal.grid_loc, renderMeta.tileDict);
 			if (start_tile && goal_tile) {
@@ -421,6 +418,9 @@ function spawnAllAgents(agents, renderMeta) {
 					agent.goal_tile = goal_tile;
 				}
 			}
+			agent.initDynamics();
+			if (renderMeta.showGoal) agent.goal.render(renderMeta);
+			agent.render(renderMeta);
 		}
 	}
 }
@@ -497,10 +497,6 @@ export async function init3DEnvironment() {
 	const risk = parseInt(document.getElementById('riskRange').value, 10);
 	console.log("density:", density, "risk:", risk);
 	
-	const NUM_CARS_LIMITER = 0.3;
-	const NUM_PEDESTRIANS_LIMITER = 0.7;
-	const NUM_MMV_LIMITER = 0.7;
-	
 	const maxDrivers = validRoadTiles.length * NUM_CARS_LIMITER;
 	const maxPedestrians = Math.floor(sidewalkTiles.length * NUM_PEDESTRIANS_LIMITER);
 	const maxMMVs = Math.floor(sidewalkTiles.length * NUM_MMV_LIMITER);
@@ -526,7 +522,7 @@ export async function init3DEnvironment() {
 		const getRandomGoal = goals => goals[Math.floor(Math.random() * goals.length)];
 		let id_counter = 0;
 		pedestrianAgents = Array.from({ length: numPedestrians }, 
-			() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null, generateRiskForAgent(risk))
+			() => new Pedestrian(id_counter++, null, getRandomGoal(sidewalkGoalObjs), null,generateRiskForAgent(risk))
 		);
 		driverAgents = Array.from({ length: numDrivers }, 
 			() => new Driver(id_counter++, null, getRandomGoal(roadGoalObjs), null, generateRiskForAgent(risk))
@@ -566,19 +562,38 @@ export async function init3DEnvironment() {
 		else attempts++;
 	}
 
-	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-// 	let debugAgent = spawnSingleAgent("pedestrian", agents, newRenderMeta, true);
-// 	console.log(debugAgent);
+	agents.forEach(agent => {
+		if (agent.type === 'driver' || agent.type ==='mmv') {
+			Math.random() * 100 < agent.risk ? agent.is_speeder = true : agent.is_speeder = false; // speeder
+			if (agent.type === 'mmv' && agent.is_speeder) agent.isDismounted = false; // ride on sidewalks
+		}
+	})
 
-	spawnAllAgents(agents, newRenderMeta);
+	let newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:SHOW_SECTOR, showGoal:SHOW_GOALS};
+	agents = [];
+	if (SHOW_PEDESTRIAN) agents = agents.concat(pedestrianAgents);
+	if (SHOW_DRIVER) agents = agents.concat(driverAgents);
+	if (SHOW_MMV) agents = agents.concat(mmvAgents);
+	
+	newRenderMeta.agents = agents;
+	let debugAgent = null;
+	if (SHOW_SINGLE_AGENT) {
+		newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:SHOW_SECTOR, showGoal:SHOW_GOALS};
+		debugAgent = spawnSingleAgent(SINGLE_AGENT_TYPE, agents, newRenderMeta, true);
+	} else {
+		spawnAllAgents(agents, newRenderMeta);
+	}
 
-	const dt = 0.2;   
+	const dt = 0.03;   
 	let isAgentMoving = false;
 	function update() {
 		if (!isAgentMoving) return;
-		newRenderMeta = {world, pfProps, tileProps, tileDict, agents};
-		updatePosition(agents, dt, newRenderMeta);
-		// updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		newRenderMeta = {world, pfProps, tileProps, tileDict, agents, showSector:SHOW_SECTOR, showGoal:SHOW_GOALS};
+		if (SHOW_SINGLE_AGENT) {
+			updateSingleAgentPosition(debugAgent, dt, newRenderMeta);
+		} else {
+			updatePosition(agents, dt, newRenderMeta);
+		}
 	}
 
 	window.addEventListener("keydown", (event) => {if (event.code == "Space") isAgentMoving = !isAgentMoving});

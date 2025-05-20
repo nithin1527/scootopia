@@ -1,6 +1,5 @@
 import {Vector3} from "three";
 import { getCurrentTile , clip, getRandFromRange, normAngle, distance} from "./util.js";
-import { MAX_VELOCITY } from "../constants.js";
 
 function refocusAgent(agent, renderMeta) {
 	if (agent.distracted) {
@@ -16,7 +15,7 @@ function refocusAgent(agent, renderMeta) {
 			for (let other of renderMeta.agents) {
 				if (other.id != agent.id && other.mesh) {
 					if (other.type === 'pedestrian' || (other.type === 'mmv' && other.isDismounted) || other.type === 'driver') {
-						if (!agent.withinFOV(other, query_radius, fov)) continue;
+						if (other && !agent.withinFOV(other, query_radius, fov)) continue;
 						if (other !== agent && other.v !== undefined) {
 							const relVel = Math.abs(agent.v - other.v);
 							sum += relVel;
@@ -50,7 +49,7 @@ function getPedestrianTargetDir(agent) {
 	const currIdx = agent.curr_path_idx;
 	const targetTile = agent.curr_path[currIdx];
 	const targetPos = targetTile.getCenterPos().clone();
-	if (agent.distracted) {
+	if (agent.type === 'pedestrian' && agent.distracted) {
 		// only compute a new offset if agent is at a new tile
 		if (agent.lastFuzzyIdx !== currIdx || !agent.fuzzyOffset) {
 			const dist = distance(agent.pos, targetPos);
@@ -146,6 +145,15 @@ function dismountAction(agent) {
 
 export function stepMMV(agent, dt, renderMeta) {
 	if (agent.mesh && !agent.reachedGoal()) {
+		let curr_tile = getCurrentTile(agent.pos, renderMeta.tileDict, renderMeta.tileProps);
+		
+		if (curr_tile && curr_tile.type === 'road-cw') {
+			agent.isDismounted = false;
+		} else if (curr_tile && curr_tile.type === 'sidewalk') {
+			agent.isDismounted = true;
+		}
+		
+		if (agent.is_speeder) agent.isDismounted = false;
 		const action = agent.isDismounted ? dismountAction(agent) : mountAction(agent, renderMeta);
 		agent.step(dt, action, renderMeta);
 	} else {
